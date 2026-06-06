@@ -1,6 +1,6 @@
 import type { ValidationError } from "express-validator";
+import type { SerializedError } from "../models/serialize-error.model";
 import { CustomError } from "./base-error";
-import type { SerializedError } from "./serialize-error.model";
 
 export class RequestValidationError extends CustomError {
   statusCode = 400;

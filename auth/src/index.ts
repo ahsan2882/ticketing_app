@@ -1,11 +1,13 @@
 import bodyParser from "body-parser";
 import express from "express";
+import mongoose from "mongoose";
+import { DatabaseConnectionError } from "./errors/database-connection-error";
+import { NotFoundError } from "./errors/not-found-error";
 import { errorHandler } from "./middlewares/error-handler";
 import { currentUserRouter } from "./routes/current-user";
 import { signInRouter } from "./routes/signin";
 import { signOutRouter } from "./routes/signout";
 import { signUpRouter } from "./routes/signup";
-import { NotFoundError } from "./errors/not-found-error";
 
 const app = express();
 
@@ -22,6 +24,17 @@ app.all("/{*splat}", async (req, res) => {
 
 app.use(errorHandler);
 
+const start = async () => {
+  try {
+    await mongoose.connect("mongodb://auth-mongo-srv:27017/auth");
+    console.log("Connected to MongoDB");
+  } catch (err) {
+    throw new DatabaseConnectionError();
+  }
+};
+
 app.listen(3000, () => {
   console.log("Listening on port 3000!!!!");
 });
+
+start();
