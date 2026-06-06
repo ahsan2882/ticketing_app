@@ -1,5 +1,5 @@
 import { CustomError } from "./base-error";
-import type { SerializedError } from "./serialize-error.model";
+import type { SerializedError } from "../models/serialize-error.model";
 
 export class DatabaseConnectionError extends CustomError {
   statusCode = 500;
