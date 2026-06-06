@@ -1,4 +1,4 @@
 export interface SerializedError {
-  message: any;
+  message: string;
   field?: string;
 }
