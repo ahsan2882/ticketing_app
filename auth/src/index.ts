@@ -1,37 +1,6 @@
-import bodyParser from "body-parser";
-import cookieSession from "cookie-session";
-import express from "express";
 import mongoose from "mongoose";
+import { app } from "./app";
 import { DatabaseConnectionError } from "./errors/database-connection-error";
-import { NotFoundError } from "./errors/not-found-error";
-import { errorHandler } from "./middlewares/error-handler";
-import { currentUserRouter } from "./routes/current-user";
-import { signInRouter } from "./routes/signin";
-import { signOutRouter } from "./routes/signout";
-import { signUpRouter } from "./routes/signup";
-
-const app = express();
-app.set("trust proxy", true);
-
-app.use(bodyParser.json());
-app.use(
-  cookieSession({
-    signed: false,
-    secure:
-      process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test",
-  }),
-);
-
-app.use(currentUserRouter);
-app.use(signInRouter);
-app.use(signUpRouter);
-app.use(signOutRouter);
-
-app.all("/{*splat}", async (req, res) => {
-  throw new NotFoundError();
-});
-
-app.use(errorHandler);
 
 const start = async () => {
   const nodeEnv = process.env.NODE_ENV;

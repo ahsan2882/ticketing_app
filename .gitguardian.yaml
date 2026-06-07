@@ -1,0 +1,8 @@
+version: 2
+
+ignore-paths:
+  - "**/__test__/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/test/**"
+  - "**/setup.ts"
