@@ -41,8 +41,8 @@ const userSchema = new mongoose.Schema(
         const { _id, email } = ret;
         return { id: _id, email };
       },
-      versionKey: false,
     },
+    versionKey: false,
   },
 );
 
