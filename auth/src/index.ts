@@ -17,7 +17,8 @@ app.use(bodyParser.json());
 app.use(
   cookieSession({
     signed: false,
-    secure: process.env.NODE_ENV === "production",
+    secure:
+      process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test",
   }),
 );
 
@@ -33,6 +34,13 @@ app.all("/{*splat}", async (req, res) => {
 app.use(errorHandler);
 
 const start = async () => {
+  const nodeEnv = process.env.NODE_ENV;
+  if (!nodeEnv) {
+    throw new Error("NODE_ENV environment variable is not defined");
+  }
+  if (!["development", "test", "production"].includes(nodeEnv)) {
+    throw new Error(`Unsupported NODE_ENV value: ${nodeEnv}`);
+  }
   if (!process.env.JWT_KEY) {
     throw new Error("JWT_KEY environment variable is not defined");
   }
