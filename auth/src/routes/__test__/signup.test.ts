@@ -258,17 +258,6 @@ describe("signup flow - ", () => {
     expect(response.headers["content-type"]).toMatch(/json/);
   });
 
-  it("allows the same email to be reused across separate test runs (db is cleared between tests)", async () => {
-    // First signup
-    await request(app)
-      .post("/api/users/signup")
-      .send({ email: "isolation@test.com", password: "test" })
-      .expect(201);
-
-    // In a fresh test this same email should work again — confirming in-memory DB is reset
-    // This test is meaningful only if your jest setup hooks clear the DB before each test
-  });
-
   it("can register multiple distinct users independently", async () => {
     await request(app)
       .post("/api/users/signup")

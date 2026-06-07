@@ -103,7 +103,6 @@ describe("signout flow - ", () => {
     const agent1 = request.agent(app);
     const agent2 = request.agent(app);
 
-    // Use agents directly so each maintains its own cookie jar
     await agent1
       .post("/api/users/signup")
       .send({ email: "user1@test.com", password: "pass1111" });
@@ -122,6 +121,16 @@ describe("signout flow - ", () => {
 
     await agent1.post("/api/users/signout").expect(200);
 
+    // Explicitly verify user2's session is still alive after user1 signed out
+    const currentUserRes = await agent2
+      .get("/api/users/currentuser")
+      .expect(200);
+    expect(currentUserRes.body.currentUser).toHaveProperty(
+      "email",
+      "user2@test.com",
+    );
+
+    // Now sign out user2 and confirm the body shape
     const user2SignoutRes = await agent2.post("/api/users/signout").expect(200);
     expect(user2SignoutRes.body).toEqual({});
   });
