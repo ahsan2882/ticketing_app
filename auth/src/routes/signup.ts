@@ -28,18 +28,19 @@ router.post(
     const user = User.build({ email, password });
     try {
       await user.save();
-      const userJwt = jwt.sign(
-        { email: user.email, id: user.id },
-        process.env.JWT_KEY!,
-      );
-      req.session = {
-        jwt: userJwt,
-      };
-      res.status(201).send(user);
     } catch (err) {
       console.error(err);
       throw new DatabaseConnectionError();
     }
+    const userJwt = jwt.sign(
+      { email: user.email, id: user.id },
+      process.env.JWT_KEY!,
+      { expiresIn: "1h" },
+    );
+    req.session = {
+      jwt: userJwt,
+    };
+    res.status(201).send(user);
   },
 );
 

@@ -33,10 +33,10 @@ app.all("/{*splat}", async (req, res) => {
 app.use(errorHandler);
 
 const start = async () => {
+  if (!process.env.JWT_KEY) {
+    throw new Error("JWT_KEY environment variable is not defined");
+  }
   try {
-    if (!process.env.JWT_KEY) {
-      throw new Error("JWT_KEY environment variable is not defined");
-    }
     await mongoose.connect("mongodb://auth-mongo-srv:27017/auth");
     console.log("Connected to MongoDB");
     app.listen(3000, () => {

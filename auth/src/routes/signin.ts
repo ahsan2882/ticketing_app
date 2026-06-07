@@ -32,6 +32,7 @@ router.post(
     const userJwt = jwt.sign(
       { email: existingUser.email, id: existingUser.id },
       process.env.JWT_KEY!,
+      { expiresIn: "1h" },
     );
     req.session = {
       jwt: userJwt,
