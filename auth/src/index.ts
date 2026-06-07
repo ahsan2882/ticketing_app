@@ -1,4 +1,5 @@
 import bodyParser from "body-parser";
+import cookieSession from "cookie-session";
 import express from "express";
 import mongoose from "mongoose";
 import { DatabaseConnectionError } from "./errors/database-connection-error";
@@ -8,7 +9,6 @@ import { currentUserRouter } from "./routes/current-user";
 import { signInRouter } from "./routes/signin";
 import { signOutRouter } from "./routes/signout";
 import { signUpRouter } from "./routes/signup";
-import cookieSession from "cookie-session";
 
 const app = express();
 app.set("trust proxy", true);
