@@ -13,26 +13,38 @@ interface UserModel extends mongoose.Model<UserDoc> {
 interface UserDoc extends mongoose.Document {
   email: string;
   password: string;
+  id: string;
 }
 
-const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    validate: {
-      validator: function (v: string) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      validate: {
+        validator: function (v: string) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        },
+        message: "Please provide a valid email",
       },
-      message: "Please provide a valid email",
+      lowercase: true, // Normalize email case
     },
-    lowercase: true, // Normalize email case
+    password: {
+      type: String,
+      required: true,
+    },
   },
-  password: {
-    type: String,
-    required: true,
+  {
+    toJSON: {
+      transform(doc, ret) {
+        const { _id, email } = ret;
+        return { id: _id, email };
+      },
+      versionKey: false,
+    },
   },
-});
+);
 
 userSchema.pre("save", async function () {
   if (this.isModified("password")) {

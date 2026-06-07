@@ -5,6 +5,7 @@ import { BadRequestError } from "../errors/bad-request-error";
 import { DatabaseConnectionError } from "../errors/database-connection-error";
 import { RequestValidationError } from "../errors/request-validation-error";
 import { User } from "../models/user.model";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
@@ -30,11 +31,18 @@ router.post(
     const user = User.build({ email, password });
     try {
       await user.save();
+      const userJwt = jwt.sign(
+        { email: user.email, id: user.id },
+        process.env.JWT_KEY!,
+      );
+      req.session = {
+        jwt: userJwt,
+      };
+      res.status(201).send(user);
     } catch (err) {
       console.error(err);
       throw new DatabaseConnectionError();
     }
-    res.status(201).send(user);
   },
 );
 
