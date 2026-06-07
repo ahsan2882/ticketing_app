@@ -34,8 +34,15 @@ describe("currentUser flow - ", () => {
   });
 
   it("returns currentUser: null when a well-formed cookie with a tampered JWT is sent", async () => {
-    const fakeJwt =
-      "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImhhY2tlckB0ZXN0LmNvbSIsImlkIjoiZmFrZWlkIn0.invalidsignature";
+    const fakeJwt = [
+      Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString(
+        "base64url",
+      ),
+      Buffer.from(
+        JSON.stringify({ email: "hacker@test.com", id: "fakeid" }),
+      ).toString("base64url"),
+      "invalidsignature",
+    ].join(".");
     const fakeSession = Buffer.from(JSON.stringify({ jwt: fakeJwt })).toString(
       "base64",
     );
