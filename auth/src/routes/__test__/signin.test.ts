@@ -1,0 +1,325 @@
+import request from "supertest";
+import { app } from "../../app";
+
+describe("signin flow - ", () => {
+  it("returns 200 on successful signin", async () => {
+    await global.signin();
+  });
+
+  it("returns the user object in the response body on successful signin", async () => {
+    // global.signin() doesn't expose the raw response body, so we need
+    // to call the route directly to assert on the response shape
+    await global.signin("shape@test.com", "validpass");
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "shape@test.com", password: "validpass" })
+      .expect(200);
+
+    expect(response.body).toHaveProperty("email", "shape@test.com");
+    expect(response.body).toHaveProperty("id");
+  });
+
+  it("does not expose the password in the response body", async () => {
+    await global.signin("secure@test.com", "validpass");
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "secure@test.com", password: "validpass" })
+      .expect(200);
+
+    expect(response.body.password).toBeUndefined();
+  });
+
+  it("returns 400 with missing email", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ password: "validpass" })
+      .expect(400);
+  });
+
+  it("returns 400 with missing password", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com" })
+      .expect(400);
+  });
+
+  it("returns 400 with missing email and password", async () => {
+    await request(app).post("/api/users/signin").send({}).expect(400);
+  });
+
+  it("returns 400 with an invalid email format", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "not-an-email", password: "validpass" })
+      .expect(400);
+  });
+
+  it("returns 400 with a whitespace-only password (trimmed to empty)", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "     " })
+      .expect(400);
+  });
+
+  it("returns 400 with an empty password string", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "" })
+      .expect(400);
+  });
+
+  it("returns errors array in the response body on 400", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "bad-email", password: "validpass" })
+      .expect(400);
+
+    expect(response.body).toHaveProperty("errors");
+    expect(Array.isArray(response.body.errors)).toBe(true);
+    expect(response.body.errors.length).toBeGreaterThan(0);
+  });
+
+  it("returns a meaningful error message for invalid email format", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "bad-email", password: "validpass" })
+      .expect(400);
+
+    const messages = response.body.errors.map(
+      (e: { message: string }) => e.message,
+    );
+    expect(messages).toContain("Please provide a valid email");
+  });
+
+  it("returns a meaningful error message for missing password", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "" })
+      .expect(400);
+
+    const messages = response.body.errors.map(
+      (e: { message: string }) => e.message,
+    );
+    expect(messages).toContain("Password is required");
+  });
+
+  it("returns multiple validation errors when both email and password are invalid", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "bad-email", password: "" })
+      .expect(400);
+
+    expect(response.body.errors.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("returns 400 when signing in with a non-existent email", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "ghost@test.com", password: "validpass" })
+      .expect(400);
+  });
+
+  it("returns 400 when signing in with the correct email but wrong password", async () => {
+    await global.signin("test@test.com", "correctpassword");
+
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "wrongpassword" })
+      .expect(400);
+  });
+
+  it("uses a generic 'Invalid credentials' message for non-existent user (no user enumeration)", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "ghost@test.com", password: "validpass" })
+      .expect(400);
+
+    const messages = response.body.errors.map(
+      (e: { message: string }) => e.message,
+    );
+    expect(messages).toContain("Invalid credentials");
+  });
+
+  it("uses a generic 'Invalid credentials' message for wrong password (no user enumeration)", async () => {
+    await global.signin("test@test.com", "correctpassword");
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "wrongpassword" })
+      .expect(400);
+
+    const messages = response.body.errors.map(
+      (e: { message: string }) => e.message,
+    );
+    expect(messages).toContain("Invalid credentials");
+  });
+
+  it("is case-sensitive for passwords (wrong case returns 400)", async () => {
+    await global.signin("test@test.com", "MyPassword");
+
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "mypassword" })
+      .expect(400);
+  });
+
+  it("trims whitespace from password before comparing — succeeds with padded correct password", async () => {
+    await global.signin("test@test.com", "validpass");
+
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "  validpass  " })
+      .expect(200);
+  });
+
+  it("sets a cookie after successful signin", async () => {
+    const cookie = await global.signin();
+    expect(cookie).toBeDefined();
+    expect(cookie.length).toBeGreaterThan(0);
+  });
+
+  it("cookie contains a valid JWT after signin", async () => {
+    const cookie = await global.signin();
+
+    const sessionData = cookie[0]!.split(";")[0]!.split("=")[1]!;
+    const decoded = JSON.parse(Buffer.from(sessionData, "base64").toString());
+    expect(decoded).toHaveProperty("jwt");
+  });
+
+  it("JWT payload contains the correct email", async () => {
+    const cookie = await global.signin("payload@test.com", "validpass");
+
+    const sessionData = cookie[0]!.split(";")[0]!.split("=")[1]!;
+    const { jwt: token } = JSON.parse(
+      Buffer.from(sessionData, "base64").toString(),
+    );
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString(),
+    );
+
+    expect(payload).toHaveProperty("email", "payload@test.com");
+    expect(payload).toHaveProperty("id");
+  });
+
+  it("JWT has an expiry (exp claim) set", async () => {
+    const cookie = await global.signin("expiry@test.com", "validpass");
+
+    const sessionData = cookie[0]!.split(";")[0]!.split("=")[1]!;
+    const { jwt: token } = JSON.parse(
+      Buffer.from(sessionData, "base64").toString(),
+    );
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString(),
+    );
+
+    expect(payload).toHaveProperty("exp");
+    const oneHourFromNow = Math.floor(Date.now() / 1000) + 3600;
+    expect(payload.exp).toBeLessThanOrEqual(oneHourFromNow);
+    expect(payload.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
+  });
+
+  it("does not set a cookie on failed signin", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "ghost@test.com", password: "validpass" })
+      .expect(400);
+
+    const cookies = response.get("Set-Cookie");
+    if (cookies) {
+      expect(cookies.some((c) => c.includes("jwt"))).toBe(false);
+    } else {
+      expect(cookies).toBeUndefined();
+    }
+  });
+
+  it("signin overwrites an existing session cookie (re-signin gets a fresh JWT)", async () => {
+    jest.setTimeout(15000);
+
+    await global.signin("relogin@test.com", "validpass");
+
+    const first = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "relogin@test.com", password: "validpass" })
+      .expect(200);
+
+    await new Promise((res) => setTimeout(res, 1100));
+
+    const second = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "relogin@test.com", password: "validpass" })
+      .expect(200);
+
+    const extractPayload = (response: typeof first) => {
+      const cookies = response.get("Set-Cookie")!;
+      const sessionData = cookies[0]!.split(";")[0]!.split("=")[1]!;
+      const { jwt: token } = JSON.parse(
+        Buffer.from(sessionData, "base64").toString(),
+      );
+      return JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+    };
+
+    const firstPayload = extractPayload(first);
+    const secondPayload = extractPayload(second);
+
+    expect(firstPayload.email).toEqual(secondPayload.email);
+    expect(firstPayload.id).toEqual(secondPayload.id);
+    expect(secondPayload.iat).toBeGreaterThan(firstPayload.iat);
+    expect(secondPayload.exp).toBeGreaterThan(firstPayload.exp);
+  }, 15000);
+
+  it("returns JSON content-type on success", async () => {
+    const cookie = await global.signin("ct@test.com", "validpass");
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "ct@test.com", password: "validpass" })
+      .set("Cookie", cookie)
+      .expect(200);
+
+    expect(response.headers["content-type"]).toMatch(/json/);
+  });
+
+  it("returns JSON content-type on error", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "bad-email", password: "validpass" })
+      .expect(400);
+
+    expect(response.headers["content-type"]).toMatch(/json/);
+  });
+
+  it("signin and signup return the same user id", async () => {
+    // global.signin() does signup+signin internally — call /currentuser
+    // with the returned cookie to confirm the id round-trips correctly
+    const cookie = await global.signin("sameid@test.com", "mypassword");
+
+    const fromSignin = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "sameid@test.com", password: "mypassword" })
+      .expect(200);
+
+    const fromCookie = await request(app)
+      .get("/api/users/currentuser")
+      .set("Cookie", cookie)
+      .expect(200);
+
+    expect(fromSignin.body.id).toEqual(fromCookie.body.currentUser.id);
+  });
+
+  it("multiple distinct users can each sign in independently", async () => {
+    await global.signin("user1@test.com", "pass1111");
+    await global.signin("user2@test.com", "pass2222");
+  });
+
+  it("user1's password does not work for user2's account", async () => {
+    await global.signin("user1@test.com", "pass1111");
+    await global.signin("user2@test.com", "pass2222");
+
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "user2@test.com", password: "pass1111" })
+      .expect(400);
+  });
+});

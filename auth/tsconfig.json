@@ -7,9 +7,10 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "esnext",
+    "module": "es2020",
     "target": "esnext",
-    "types": ["node"],
+    "types": ["jest", "node"],
+    "moduleResolution": "bundler",
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -39,6 +40,8 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }
