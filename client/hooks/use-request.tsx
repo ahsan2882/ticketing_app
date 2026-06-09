@@ -1,10 +1,10 @@
 "use client";
 
+import { RequestError } from "@/models/request-error.model";
 import axios, { AxiosResponse } from "axios";
 import { useState } from "react";
-import { RequestError } from "@/models/request-error.model";
 
-export function useRequest({
+export function useRequest<TResponse = unknown>({
   url,
   method,
   body,
@@ -12,51 +12,40 @@ export function useRequest({
 }: {
   url: string;
   method: "get" | "post";
-  body?: Record<string, any>;
-  onSuccess?: (res?: any) => void;
+  body?: Record<string, unknown>;
+  onSuccess?: (res?: TResponse) => void;
 }) {
-  const [errors, setErrors] = useState<any>(null);
+  const [errors, setErrors] = useState<RequestError[] | null>(null);
   const [errorFields, setErrorFields] = useState<string[]>([]);
 
   const doRequest = async () => {
     setErrors(null);
     setErrorFields([]);
     try {
-      let response: AxiosResponse<any, any, {}>;
-      if (method === "get") {
-        response = await axios[method](url);
-      } else {
-        if (body) {
-          response = await axios[method](url, body);
-        } else {
-          response = await axios[method](url);
-        }
-      }
+      const response =
+        method === "get"
+          ? await axios.get<TResponse>(url)
+          : await axios.post<TResponse>(url, body);
       if (onSuccess) {
         onSuccess(response.data);
       }
       return response.data;
-    } catch (err: any) {
-      const errors = err.response.data.errors as RequestError[];
-      setErrors(
-        <>
-          {errors.map((err, i) => {
-            return (
-              <div key={i} className="text-red-500 w-full">
-                {err.message}
-              </div>
-            );
-          })}
-        </>,
-      );
-      const fields = [
-        ...new Set(
-          errors
-            .map((error) => error.field)
-            .filter((field): field is string => !!field),
-        ),
-      ];
-      setErrorFields(fields);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const errors = (err.response?.data?.errors || []) as RequestError[];
+        if (errors) {
+          setErrors(errors);
+          const fields = [
+            ...new Set(
+              errors
+                .map((error) => error.field)
+                .filter((field): field is string => !!field),
+            ),
+          ];
+          setErrorFields(fields);
+        }
+      }
+      console.error("Unexpected error:", err);
     }
   };
 

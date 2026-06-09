@@ -1,8 +1,10 @@
 "use client";
-import Link from "next/link";
-import { useState } from "react";
 import axios from "axios";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import GradientButton from "../ui/gradient-button";
+import TicketIcon from "../ui/icons/ticket-svg";
 
 const NAV_LINKS = [
   { label: "Browse Events", href: "#" },
@@ -11,20 +13,25 @@ const NAV_LINKS = [
   { label: "How it works", href: "#" },
 ];
 
-const USER = {
-  name: "Alex Morgan",
-  email: "alex@example.com",
-  initials: "AM",
-};
+type CurrentUser = { email: string; id: string; name: string } | null;
 
-export default function Header({ currentUser }: { currentUser: any }) {
+export default function Header({ currentUser }: { currentUser: CurrentUser }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const initials = currentUser?.name
+    ?.split(" ")
+    .map((n) => n[0]?.toUpperCase())
+    .join("");
 
   const signOutHandler = async () => {
-    await axios.post("/api/users/signout");
-    router.refresh();
+    try {
+      await axios.post("/api/users/signout");
+      router.refresh();
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      alert("signout failed");
+    }
   };
   return (
     <>
@@ -49,16 +56,7 @@ export default function Header({ currentUser }: { currentUser: any }) {
             >
               {/* Ticket icon */}
               <span className="relative flex items-center justify-center w-8 h-8 bg-linear-to-br from-violet-600 to-fuchsia-600 group-hover:from-violet-500 group-hover:to-fuchsia-500 transition-all duration-200 shrink-0">
-                <svg
-                  aria-hidden="true"
-                  className="w-4 h-4 text-white"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                >
-                  <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                </svg>
+                <TicketIcon customClass="w-4 h-4 text-white" />
                 {/* Corner cut notches */}
                 <span
                   aria-hidden="true"
@@ -141,7 +139,7 @@ export default function Header({ currentUser }: { currentUser: any }) {
                     >
                       {/* Avatar */}
                       <span className="flex items-center justify-center w-7 h-7 bg-linear-to-br from-violet-600 to-fuchsia-600 shrink-0 text-white text-xs font-black">
-                        {USER.initials}
+                        {initials}
                       </span>
                       <span className="text-sm font-semibold text-zinc-300 group-hover:text-white transition-colors leading-none">
                         My Profile
@@ -173,10 +171,10 @@ export default function Header({ currentUser }: { currentUser: any }) {
                         {/* User info header */}
                         <header className="px-4 py-3 border-b border-zinc-800">
                           <p className="text-white text-sm font-bold truncate">
-                            {USER.name}
+                            {currentUser.name}
                           </p>
                           <p className="text-zinc-500 text-xs font-mono truncate mt-0.5">
-                            {USER.email}
+                            {currentUser.email}
                           </p>
                         </header>
 
@@ -300,31 +298,11 @@ export default function Header({ currentUser }: { currentUser: any }) {
 
                   {/* Sign up — gradient fill button */}
                   <li>
-                    <Link
-                      href="/auth/signup"
-                      className="relative overflow-hidden flex items-center gap-2 px-5 py-2 text-sm font-black text-white bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 group"
-                    >
-                      <span className="relative z-10">Get your pass</span>
-                      <svg
-                        aria-hidden="true"
-                        className="relative z-10 w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-150"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                      >
-                        <path
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {/* Shimmer */}
-                      <span
-                        aria-hidden="true"
-                        className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-12"
-                      />
-                    </Link>
+                    <GradientButton
+                      isLink={true}
+                      linkHref="/auth/signup"
+                      text="Get your pass"
+                    />
                   </li>
                 </>
               )}
@@ -448,7 +426,7 @@ export default function Header({ currentUser }: { currentUser: any }) {
                 <menu className="list-none p-0 m-0 pt-2 flex flex-col gap-2">
                   <li>
                     <Link
-                      href="#"
+                      href="/auth/signin"
                       className="flex items-center justify-center px-4 py-2.5 text-sm font-bold text-zinc-300 border border-zinc-700 hover:border-zinc-500 hover:text-white transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm"
                     >
                       Sign in
@@ -456,7 +434,7 @@ export default function Header({ currentUser }: { currentUser: any }) {
                   </li>
                   <li>
                     <Link
-                      href="#"
+                      href="/auth/signout"
                       className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-black text-white bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm"
                     >
                       Get your pass

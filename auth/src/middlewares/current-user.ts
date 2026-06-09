@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import type { UserPayload } from "../models/user.model";
+import { type UserPayload } from "../models/user.model";
 
 declare global {
   namespace Express {
@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export const currentUser = (
+export const currentUser = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -27,7 +27,11 @@ export const currentUser = (
       typeof payload.id === "string" &&
       typeof payload.email === "string"
     ) {
-      req.currentUser = { id: payload.id, email: payload.email };
+      req.currentUser = {
+        id: payload.id,
+        email: payload.email,
+        name: payload.name,
+      };
     }
   } catch (err) {
     // If JWT verification fails, we simply proceed without setting currentUser

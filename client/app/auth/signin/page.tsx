@@ -1,32 +1,35 @@
 "use client";
 
 import SignInForm from "@/components/signin/signin-form";
+import TicketIcon from "@/components/ui/icons/ticket-svg";
+import Perforations from "@/components/ui/perforations";
+import TicketFooter from "../../../components/ui/ticket-footer";
+
+const recentEvents = [
+  {
+    name: "Arctic Monkeys",
+    venue: "Wembley Arena",
+    date: "SAT 14 JUN",
+    cat: "Music",
+    color: "from-violet-600 to-fuchsia-700",
+  },
+  {
+    name: "El Clásico",
+    venue: "Camp Nou",
+    date: "SUN 22 JUN",
+    cat: "Sport",
+    color: "from-emerald-700 to-teal-600",
+  },
+  {
+    name: "Hamilton",
+    venue: "Victoria Palace",
+    date: "FRI 27 JUN",
+    cat: "Theatre",
+    color: "from-amber-700 to-orange-600",
+  },
+];
 
 export default function SignIn() {
-  const recentEvents = [
-    {
-      name: "Arctic Monkeys",
-      venue: "Wembley Arena",
-      date: "SAT 14 JUN",
-      cat: "Music",
-      color: "from-violet-600 to-fuchsia-700",
-    },
-    {
-      name: "El Clásico",
-      venue: "Camp Nou",
-      date: "SUN 22 JUN",
-      cat: "Sport",
-      color: "from-emerald-700 to-teal-600",
-    },
-    {
-      name: "Hamilton",
-      venue: "Victoria Palace",
-      date: "FRI 27 JUN",
-      cat: "Theatre",
-      color: "from-amber-700 to-orange-600",
-    },
-  ];
-
   return (
     <>
       <main className="h-full bg-zinc-950 flex relative overflow-hidden">
@@ -59,15 +62,7 @@ export default function SignIn() {
           {/* ── Logo ── */}
           <header className="relative">
             <p className="flex items-center gap-2.5 text-white font-mono text-sm tracking-widest uppercase">
-              <svg
-                className="w-5 h-5 text-violet-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-              </svg>
+              <TicketIcon customClass="w-5 h-5 text-violet-400" />
               VenuePass
             </p>
           </header>
@@ -83,7 +78,7 @@ export default function SignIn() {
             </h2>
             <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
               Pick up where you left off — check your upcoming events, manage
-              your listings, and grab what's selling fast.
+              your listings, and grab what&apos;s selling fast.
             </p>
           </section>
 
@@ -93,7 +88,7 @@ export default function SignIn() {
               Trending right now
             </p>
             <ol className="space-y-3 list-none p-0">
-              {recentEvents.map((ev, i) => (
+              {recentEvents.map((ev) => (
                 <li
                   key={ev.name}
                   className="group relative flex items-stretch overflow-hidden bg-zinc-900 border border-zinc-800 hover:border-zinc-600 transition-colors duration-200"
@@ -176,14 +171,10 @@ export default function SignIn() {
           <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-zinc-950 border border-zinc-800" />
           <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-zinc-950 border border-zinc-800" />
           {/* Perforation dots along seam */}
-          <ol className="flex flex-col justify-evenly h-full list-none p-0 py-6">
-            {[...Array(20)].map((_, i) => (
-              <li
-                key={i}
-                className="w-2 h-2 rounded-full bg-zinc-900 border border-zinc-800 shrink-0"
-              />
-            ))}
-          </ol>
+          <Perforations
+            count={20}
+            className="flex-col justify-evenly h-full py-6"
+          />
         </aside>
 
         {/* ══════════════════════════════════════════
@@ -193,15 +184,11 @@ export default function SignIn() {
           <article className="relative w-full max-w-[90%]">
             {/* ── Decorative ticket stub frame ── */}
             {/* Top perforation row */}
-            <ol
-              aria-hidden="true"
-              className="flex justify-between px-1 list-none p-0 -mb-1"
-            >
-              {[...Array(24)].map((_, i) => (
-                <li key={i} className="w-2 h-2 rounded-full bg-fuchsia-600" />
-              ))}
-            </ol>
-
+            <Perforations
+              count={24}
+              className="justify-between px-1 -mb-1"
+              color="bg-fuchsia-600"
+            />
             {/* Main card */}
             <section className="bg-zinc-900 border-x border-zinc-800 shadow-2xl shadow-violet-950/20">
               {/* Header gradient band */}
@@ -223,16 +210,7 @@ export default function SignIn() {
 
                 <hgroup className="relative">
                   <p className="flex items-center gap-2 text-white/50 font-mono text-[12px] tracking-[0.2em] uppercase mb-2">
-                    <svg
-                      aria-hidden="true"
-                      className="w-3.5 h-3.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                    </svg>
+                    <TicketIcon customClass="w-3.5 h-3.5" />
                     Member Access
                   </p>
                   <h1 className="text-3xl font-black text-white tracking-tight leading-tight">
@@ -269,45 +247,11 @@ export default function SignIn() {
               />
 
               {/* Footer band */}
-              <footer className="flex items-center justify-between px-8 py-3">
-                <small className="text-zinc-600 font-mono text-[12px] not-italic tracking-widest">
-                  VENUEPASS™
-                </small>
-                <nav aria-label="Event types">
-                  <ul className="flex gap-1.5 list-none p-0">
-                    {[
-                      ["🎵", "Music"],
-                      ["🎭", "Theatre"],
-                      ["⚽", "Sports"],
-                      ["🎪", "Events"],
-                    ].map(([emoji, label]) => (
-                      <li key={label}>
-                        <span
-                          role="img"
-                          aria-label={label}
-                          className="text-sm opacity-50 hover:opacity-100 transition-opacity cursor-default"
-                        >
-                          {emoji}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-                <small className="text-zinc-600 font-mono text-[12px] not-italic">
-                  GATE B · 2
-                </small>
-              </footer>
+              <TicketFooter footerExtraText=" GATE B · 2" />
             </section>
 
             {/* Bottom perforation row */}
-            <ol
-              aria-hidden="true"
-              className="flex justify-between px-1  list-none p-0 -mt-1"
-            >
-              {[...Array(24)].map((_, i) => (
-                <li key={i} className="w-2 h-2 rounded-full bg-zinc-800" />
-              ))}
-            </ol>
+            <Perforations count={24} className="justify-between px-1 -mt-1" />
 
             {/* ── Mini event preview strip below the card ── */}
             <section

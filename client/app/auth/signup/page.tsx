@@ -1,6 +1,9 @@
 "use client";
 
 import SignUpForm from "@/components/signup/signup-form";
+import TicketIcon from "@/components/ui/icons/ticket-svg";
+import Perforations from "@/components/ui/perforations";
+import TicketFooter from "../../../components/ui/ticket-footer";
 
 export default function SignupPage() {
   return (
@@ -73,16 +76,7 @@ export default function SignupPage() {
               <div className="relative flex items-center justify-between">
                 <hgroup>
                   <p className="flex items-center gap-2 mb-1">
-                    <svg
-                      aria-hidden="true"
-                      className="w-5 h-5 text-white/80"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                    </svg>
+                    <TicketIcon customClass="w-5 h-5 text-white/80" />
                     <span className="text-white/60 text-[14px] font-mono tracking-widest uppercase">
                       Venue Pass
                     </span>
@@ -115,45 +109,11 @@ export default function SignupPage() {
             <SignUpForm />
 
             {/* Ticket footer */}
-            <footer className="border-t border-zinc-800 px-8 py-3 flex items-center justify-between">
-              <small className="text-zinc-600 font-mono text-[14px] not-italic">
-                VENUEPASS™
-              </small>
-              <nav aria-label="Event categories">
-                <ul className="flex gap-1 list-none p-0">
-                  {[
-                    ["🎵", "Music"],
-                    ["🎭", "Theatre"],
-                    ["⚽", "Sports"],
-                    ["🎪", "Events"],
-                  ].map(([emoji, label]) => (
-                    <li key={label}>
-                      <span
-                        role="img"
-                        aria-label={label}
-                        className="text-sm opacity-60 hover:opacity-100 transition-opacity cursor-default"
-                      >
-                        {emoji}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-              <small className="text-zinc-600 font-mono text-[12px] not-italic">
-                SEC A · ROW 1
-              </small>
-            </footer>
+            <TicketFooter footerExtraText="SEC A · ROW 1" />
           </section>
 
           {/* Perforated bottom edge */}
-          <ol
-            aria-hidden="true"
-            className="flex justify-between px-2 list-none p-0 -mt-1"
-          >
-            {[...Array(22)].map((_, i) => (
-              <li key={i} className="w-2 h-2 rounded-full bg-zinc-800" />
-            ))}
-          </ol>
+          <Perforations count={22} className="px-2 justify-between -mt-1" />
         </article>
       </main>
     </>

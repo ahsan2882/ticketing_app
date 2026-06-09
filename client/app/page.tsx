@@ -1,11 +1,1 @@
-import Home from "./home/page";
-
-function LandingPage() {
-  return (
-    <>
-      <Home />
-    </>
-  );
-}
-
-export default LandingPage;
+export { default } from "./home/page";

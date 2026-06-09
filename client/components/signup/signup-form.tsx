@@ -1,23 +1,29 @@
 "use client";
 
-import { useState, type SyntheticEvent } from "react";
 import { useRequest } from "@/hooks/use-request";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type SyntheticEvent } from "react";
+import FormField from "../ui/form-field";
+import IdentityIcon from "../ui/icons/identity-svg";
+import EmailIcon from "../ui/icons/email-svg";
+import LockIcon from "../ui/icons/lock-svg";
+import GradientButton from "../ui/gradient-button";
 
 export default function SignUpForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const { doRequest, errors, errorFields } = useRequest({
     url: "/api/users/signup",
     method: "post",
     body: {
       email,
       password,
+      name: fullName,
     },
     onSuccess: (res) => {
-      console.log({ res });
       router.push("/");
       router.refresh();
     },
@@ -37,71 +43,65 @@ export default function SignUpForm() {
         Join thousands buying &amp; selling tickets for concerts, sports,
         theatre, and more.
       </p>
-      {errors}
+      {errors &&
+        errors.map((err, i) => {
+          return (
+            <div key={i} className="text-red-500 w-full">
+              {err.message}
+            </div>
+          );
+        })}
+
+      {/* Name field */}
+      <FormField
+        label="Full Name"
+        name="fullName"
+        id="full-name"
+        type="text"
+        placeholder="Alex Morgan"
+        autoComplete="name"
+        value={fullName}
+        onChange={setFullName}
+        icon={<IdentityIcon />}
+        hasError={
+          errorFields.includes("name") || errorFields.includes("credentials")
+        }
+      />
 
       {/* Email field */}
-      <fieldset className="space-y-1.5 border-none p-0 m-0">
-        <label
-          htmlFor="email"
-          className="block text-sm font-mono font-semibold tracking-widest text-zinc-400 uppercase"
-        >
-          Email Address
-        </label>
-        <span className="relative group flex items-center">
-          <svg
-            aria-hidden="true"
-            className="absolute left-3.5 w-4 h-4 text-zinc-500 group-focus-within:text-violet-400 transition-colors duration-200 pointer-events-none"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-          <input
-            type="email"
-            name="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            autoComplete="email"
-            className={`w-full bg-zinc-800/60 border text-zinc-100 placeholder-zinc-600 rounded-none pl-10 pr-4 py-3 text-sm focus:outline-none  focus:ring-1 focus:ring-violet-500/50 focus:bg-zinc-800 transition-all duration-200 ${errorFields.includes("email") ? "border-red-500" : "border-zinc-700 focus:border-violet-500"}`}
-          />
-        </span>
-      </fieldset>
+      <FormField
+        label="Email Address"
+        name="email"
+        id="email"
+        type="email"
+        placeholder="you@example.com"
+        autoComplete="email"
+        value={email}
+        onChange={setEmail}
+        hasError={
+          errorFields.includes("email") || errorFields.includes("credentials")
+        }
+        icon={<EmailIcon />}
+        labelClassName="mt-2"
+      />
 
       {/* Password field */}
-      <fieldset className="space-y-1.5 border-none p-0 m-0 mt-2">
-        <label
-          htmlFor="password"
-          className="block text-sm font-mono font-semibold tracking-widest text-zinc-400 uppercase"
-        >
-          Password
-        </label>
-        <span className="relative group flex items-center">
-          <svg
-            aria-hidden="true"
-            className="absolute left-3.5 w-4 h-4 text-zinc-500 group-focus-within:text-violet-400 transition-colors duration-200 pointer-events-none"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          <input
-            type="password"
-            name="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min. 4 characters"
-            autoComplete="new-password"
-            className={`w-full bg-zinc-800/60 border text-zinc-100 placeholder-zinc-600 rounded-none pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/50 focus:bg-zinc-800 transition-all duration-200 ${errorFields.includes("password") ? "border-red-500" : "border-zinc-700 focus:border-violet-500"}`}
-          />
-        </span>
-      </fieldset>
+      <FormField
+        label="Password"
+        name="password"
+        id="password"
+        type="password"
+        placeholder="Min. 4 characters"
+        autoComplete="new-password"
+        value={password}
+        onChange={setPassword}
+        hasError={
+          errorFields.includes("password") ||
+          errorFields.includes("credentials")
+        }
+        icon={<LockIcon />}
+        labelClassName="mt-2"
+      />
 
       {/* Terms checkbox */}
       <label
@@ -149,32 +149,7 @@ export default function SignUpForm() {
       </label>
 
       {/* Submit */}
-      <button
-        type="submit"
-        className="w-full mt-2 py-3.5 px-6 bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 active:scale-[0.99] text-white font-black text-sm tracking-widest uppercase transition-all duration-200 relative overflow-hidden group focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
-      >
-        <span className="relative z-10 flex items-center justify-center gap-2">
-          Get My Pass
-          <svg
-            aria-hidden="true"
-            className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          >
-            <path
-              d="M13 7l5 5m0 0l-5 5m5-5H6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-12"
-        />
-      </button>
+      <GradientButton text="Get my pass" type="submit" isLink={false} />
 
       {/* OR divider */}
       <p

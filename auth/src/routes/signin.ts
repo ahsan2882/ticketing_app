@@ -17,20 +17,24 @@ router.post(
   ],
   validateRequest,
   async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
-      throw new BadRequestError("Invalid credentials", "email");
+      throw new BadRequestError("Invalid credentials", "credentials");
     }
     const passwordsMatch = await Password.compare(
       existingUser.password,
       password,
     );
     if (!passwordsMatch) {
-      throw new BadRequestError("Invalid credentials", "password");
+      throw new BadRequestError("Invalid credentials", "credentials");
     }
     const userJwt = jwt.sign(
-      { email: existingUser.email, id: existingUser.id },
+      {
+        email: existingUser.email,
+        id: existingUser.id,
+        name: existingUser.name,
+      },
       process.env.JWT_KEY!,
       { expiresIn: "1h" },
     );
