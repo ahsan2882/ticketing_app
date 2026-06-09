@@ -16,6 +16,7 @@ export class Password {
   ): Promise<boolean> {
     // split may produce undefined salt if storedPassword is malformed
     const [hashedPassword, salt] = storedPassword.split(".");
+
     if (!salt || !hashedPassword) {
       // invalid stored password format
       return false;

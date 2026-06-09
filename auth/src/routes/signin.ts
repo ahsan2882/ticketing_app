@@ -20,14 +20,14 @@ router.post(
     const { email, password } = req.body;
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
-      throw new BadRequestError("Invalid credentials");
+      throw new BadRequestError("Invalid credentials", "email");
     }
     const passwordsMatch = await Password.compare(
       existingUser.password,
       password,
     );
     if (!passwordsMatch) {
-      throw new BadRequestError("Invalid credentials");
+      throw new BadRequestError("Invalid credentials", "password");
     }
     const userJwt = jwt.sign(
       { email: existingUser.email, id: existingUser.id },
