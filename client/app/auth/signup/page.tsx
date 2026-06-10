@@ -3,7 +3,7 @@
 import SignUpForm from "@/components/signup/signup-form";
 import TicketIcon from "@/components/ui/icons/ticket-svg";
 import Perforations from "@/components/ui/perforations";
-import TicketFooter from "../../../components/ui/ticket-footer";
+import TicketFooter from "@/components/ui/ticket-footer";
 
 export default function SignupPage() {
   return (

@@ -3,6 +3,8 @@
 export default function TicketIcon({ customClass }: { customClass: string }) {
   return (
     <svg
+      aria-hidden="true"
+      focusable="false"
       className={`${customClass}`}
       viewBox="0 0 24 24"
       fill="none"

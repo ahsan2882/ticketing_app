@@ -1,5 +1,3 @@
-"use client";
-
 const TICKER_ITEMS = [
   "2 tickets sold · Kendrick Lamar · New York",
   "5 tickets sold · Hamilton · London",
@@ -26,7 +24,6 @@ export default function LiveSalesTicker() {
           <ul
             aria-live="polite"
             className="flex gap-10 list-none p-0 w-max animate-[marquee_30s_linear_infinite]"
-            style={{ ["--tw-translate-x" as string]: "0" }}
           >
             {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
               <li

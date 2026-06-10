@@ -1,19 +1,17 @@
-"use client";
 import TicketIcon from "@/components/ui/icons/ticket-svg";
 
 import Link from "next/link";
+import EventCategories from "./components/categories-section";
 import HeroCarousel from "./components/hero-carousel";
 import LiveSalesTicker from "./components/live-sales-ticker";
-import EventCategories from "./components/categories-section";
-import TrendingEvents from "./components/trending-section";
-import VenuePassConcept from "./components/venue-pass-concept";
-import TrustStrip from "./components/trust-strip";
 import SellCTA from "./components/sell-cta";
+import TrendingEvents from "./components/trending-section";
+import TrustStrip from "./components/trust-strip";
+import VenuePassConcept from "./components/venue-pass-concept";
 
 export default function Home() {
   return (
     <>
-      {" "}
       <div className="h-full bg-zinc-950 overflow-y-auto scroll-smooth">
         {/* ═══════════════════════════════════════
           1 · HERO CAROUSEL
@@ -57,6 +55,7 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
               {/* Brand col */}
               <section className="col-span-2 md:col-span-1 space-y-4">
+                {/* TODO: Add navigation later */}
                 <Link
                   href="#"
                   className="flex items-center gap-2.5 w-fit"
@@ -113,6 +112,7 @@ export default function Home() {
                   <ul className="space-y-2.5 list-none p-0">
                     {links.map((link) => (
                       <li key={link}>
+                        {/* TODO: Add navigation later */}
                         <Link
                           href="#"
                           className="text-zinc-500 hover:text-white text-sm transition-colors duration-150 focus:outline-none focus-visible:underline"
@@ -136,6 +136,7 @@ export default function Home() {
                     "Cookie settings",
                   ].map((link) => (
                     <li key={link}>
+                      {/* TODO: Add navigation later */}
                       <Link
                         href="#"
                         className="text-zinc-700 hover:text-zinc-400 text-xs font-mono transition-colors"

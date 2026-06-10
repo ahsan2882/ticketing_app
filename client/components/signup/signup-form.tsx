@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
 import FormField from "../ui/form-field";
-import IdentityIcon from "../ui/icons/identity-svg";
-import EmailIcon from "../ui/icons/email-svg";
-import LockIcon from "../ui/icons/lock-svg";
 import GradientButton from "../ui/gradient-button";
+import EmailIcon from "../ui/icons/email-svg";
+import IdentityIcon from "../ui/icons/identity-svg";
+import LockIcon from "../ui/icons/lock-svg";
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -113,6 +113,7 @@ export default function SignUpForm() {
             type="checkbox"
             id="terms"
             name="terms"
+            required
             className="peer appearance-none w-4 h-4 border border-zinc-600 bg-zinc-800 checked:bg-violet-600 checked:border-violet-600 focus:outline-none focus:ring-2 focus:ring-violet-500/30 cursor-pointer transition-colors duration-150 rounded-sm"
           />
           <svg
@@ -131,14 +132,14 @@ export default function SignUpForm() {
           </svg>
         </span>
         <small className="text-sm text-zinc-500 leading-relaxed not-italic">
-          I agree to the{" "}
+          I agree to the {/* TODO: Add navigation later */}
           <Link
             href="#"
             className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors"
           >
             Terms of Service
           </Link>{" "}
-          and{" "}
+          and {/* TODO: Add navigation later */}
           <Link
             href="#"
             className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors"

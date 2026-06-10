@@ -99,7 +99,7 @@ export default function HeroCarousel() {
               Featured event {active + 1} of {HERO_SLIDES.length}
             </p>
 
-            <hgroup className="space-y-2">
+            <div className="space-y-2">
               <h1
                 key={slide.id}
                 className="text-5xl lg:text-6xl font-black text-white leading-[0.95] tracking-tight"
@@ -107,7 +107,7 @@ export default function HeroCarousel() {
                 {slide.artist}
               </h1>
               <p className="text-zinc-400 text-lg font-medium">{slide.tour}</p>
-            </hgroup>
+            </div>
 
             <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-mono">
               <div>
@@ -131,38 +131,42 @@ export default function HeroCarousel() {
               · From <span className="text-white font-bold">${slide.from}</span>
             </p>
 
-            <menu className="flex flex-wrap gap-3 list-none p-0 m-0">
-              <li>
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-sm tracking-widest uppercase transition-all duration-200 group overflow-hidden"
-                >
-                  Get tickets
-                  <svg
-                    aria-hidden="true"
-                    className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
+            <nav className="flex flex-wrap gap-3">
+              <ul className="flex flex-wrap gap-3 list-none p-0 m-0">
+                <li>
+                  {/* TODO: Add navigation later */}
+                  <Link
+                    href="#"
+                    className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-sm tracking-widest uppercase transition-all duration-200 group overflow-hidden"
                   >
-                    <path
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="flex items-center px-6 py-3 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white text-sm font-bold transition-all duration-150"
-                >
-                  View details
-                </Link>
-              </li>
-            </menu>
+                    Get tickets
+                    <svg
+                      aria-hidden="true"
+                      className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <path
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </Link>
+                </li>
+                <li>
+                  {/* TODO: Add navigation later */}
+                  <Link
+                    href="#"
+                    className="flex items-center px-6 py-3 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white text-sm font-bold transition-all duration-150"
+                  >
+                    View details
+                  </Link>
+                </li>
+              </ul>
+            </nav>
           </div>
 
           {/* Right — giant ticket stub */}

@@ -90,6 +90,7 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
             >
               {NAV_LINKS.map(({ label, href }) => (
                 <li key={label}>
+                  {/* TODO: Add navigation later */}
                   <Link
                     href={href}
                     className="relative px-3.5 py-2 text-sm text-zinc-400 hover:text-white font-medium transition-colors duration-150 group focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm"
@@ -109,6 +110,7 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
             <menu className="hidden md:flex items-center gap-2 list-none p-0 m-0 shrink-0">
               {/* Live events badge */}
               <li>
+                {/* TODO: Add navigation later */}
                 <Link
                   href="#"
                   className="flex items-center gap-2 px-5 py-2 text-sm font-mono text-emerald-400 border border-emerald-800 hover:border-emerald-600 hover:bg-emerald-950/40 transition-all duration-150 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
@@ -199,6 +201,7 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
                               },
                             ].map(({ label, icon }) => (
                               <li key={label} role="none">
+                                {/* TODO: Add navigation later */}
                                 <Link
                                   href="#"
                                   role="menuitem"
@@ -340,6 +343,7 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
             <ul className="list-none p-0 space-y-0.5" role="list">
               {NAV_LINKS.map(({ label, href }) => (
                 <li key={label}>
+                  {/* TODO: Add navigation later */}
                   <Link
                     href={href}
                     className="flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm"
@@ -358,6 +362,7 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
             <hr className="border-zinc-800 my-3" />
 
             {/* Live events */}
+            {/* TODO: Add navigation later */}
             <Link
               href="#"
               className="flex items-center gap-2 px-3 py-2.5 text-sm font-mono text-emerald-400 hover:bg-zinc-800/60 transition-all duration-150 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
@@ -384,6 +389,7 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
                     "Settings",
                   ].map((label) => (
                     <li key={label}>
+                      {/* TODO: Add navigation later */}
                       <Link
                         href="#"
                         className="flex items-center gap-3 px-3 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm"
@@ -434,7 +440,7 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
                   </li>
                   <li>
                     <Link
-                      href="/auth/signout"
+                      href="/auth/signup"
                       className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-black text-white bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm"
                     >
                       Get your pass

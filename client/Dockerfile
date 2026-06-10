@@ -4,13 +4,11 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
 WORKDIR /app
 
-COPY package.json ./
+COPY --chown=nextjs:nodejs package.json ./
 
 RUN npm install
 
-COPY . .
-
-RUN chown -R nextjs:nodejs /app
+COPY --chown=nextjs:nodejs . .
 
 USER nextjs
 

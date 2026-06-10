@@ -33,7 +33,7 @@ export default async function RootLayout({
     >
       <body className="h-full flex flex-col">
         <Header currentUser={currentUser} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </body>
     </html>
   );

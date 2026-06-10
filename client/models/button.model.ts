@@ -1,6 +1,13 @@
-export interface ButtonProps {
-  type?: "submit" | "button";
-  isLink: boolean;
-  linkHref?: string;
-  text: string;
-}
+export type ButtonProps =
+  | {
+      isLink: true;
+      linkHref: string;
+      text: string;
+      type?: never;
+    }
+  | {
+      isLink: false;
+      type: "submit" | "button";
+      text: string;
+      linkHref?: never;
+    };

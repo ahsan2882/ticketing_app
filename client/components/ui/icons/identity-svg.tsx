@@ -4,6 +4,7 @@ export default function IdentityIcon() {
   return (
     <svg
       aria-hidden="true"
+      focusable="false"
       className="w-4 h-4"
       viewBox="0 0 24 24"
       fill="none"

@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 
 const CATEGORIES = [
@@ -54,7 +52,7 @@ export default function EventCategories() {
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20"
     >
       <header className="flex items-end justify-between mb-10">
-        <hgroup>
+        <div>
           <p className="font-mono text-[10px] tracking-[0.2em] text-violet-400 uppercase mb-2">
             What are you into?
           </p>
@@ -64,7 +62,8 @@ export default function EventCategories() {
           >
             Browse by category
           </h2>
-        </hgroup>
+        </div>
+        {/* TODO: Add navigation later */}
         <Link
           href="#"
           className="hidden sm:flex items-center gap-1.5 text-sm text-zinc-500 hover:text-white font-mono transition-colors"
@@ -90,6 +89,7 @@ export default function EventCategories() {
       <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 list-none p-0">
         {CATEGORIES.map((cat) => (
           <li key={cat.name}>
+            {/* TODO: Add navigation later */}
             <Link
               href="#"
               className={`group flex flex-col items-center justify-center gap-3 py-7 border ${cat.border} bg-zinc-900 hover:bg-zinc-800/80 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500`}

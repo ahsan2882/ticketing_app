@@ -11,7 +11,7 @@ export default function GradientButton({
 }: ButtonProps) {
   return (
     <>
-      {isLink && !!linkHref ? (
+      {isLink && linkHref ? (
         <Link
           href={linkHref}
           className="relative overflow-hidden flex items-center gap-2 px-5 py-2 text-sm font-black text-white bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 group"

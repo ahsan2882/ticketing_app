@@ -9,10 +9,12 @@ export async function getCurrentUser() {
       "http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/api/users/currentuser",
       {
         headers: headersObject,
+        timeout: 5000,
       },
     );
     return data;
   } catch (error) {
+    console.error(error);
     return { currentUser: null };
   }
 }

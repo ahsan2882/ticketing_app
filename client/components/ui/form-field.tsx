@@ -38,7 +38,7 @@ export default function FormField({
           name={name}
           type={type}
           value={value}
-          onChange={(e) => onChange?.(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoComplete={autoComplete}
           className={`w-full bg-transparent text-zinc-100 placeholder-zinc-600 pl-10 pr-4 py-3 text-sm focus:outline-none ${inputClassName}`}

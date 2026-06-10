@@ -1,7 +1,7 @@
 "use client";
 
 import { RequestError } from "@/models/request-error.model";
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import { useState } from "react";
 
 export function useRequest<TResponse = unknown>({
@@ -44,8 +44,9 @@ export function useRequest<TResponse = unknown>({
           ];
           setErrorFields(fields);
         }
+      } else {
+        console.error("Unexpected error:", err);
       }
-      console.error("Unexpected error:", err);
     }
   };
 

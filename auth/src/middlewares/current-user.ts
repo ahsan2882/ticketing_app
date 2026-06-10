@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export const currentUser = async (
+export const currentUser = (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -25,7 +25,8 @@ export const currentUser = async (
       typeof payload === "object" &&
       payload !== null &&
       typeof payload.id === "string" &&
-      typeof payload.email === "string"
+      typeof payload.email === "string" &&
+      typeof payload.name === "string"
     ) {
       req.currentUser = {
         id: payload.id,

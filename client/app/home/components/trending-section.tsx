@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 
 const TRENDING = [
@@ -67,7 +65,7 @@ export default function TrendingEvents() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="flex items-end justify-between mb-10">
-          <hgroup>
+          <div>
             <p className="font-mono text-[10px] tracking-[0.2em] text-violet-400 uppercase mb-2">
               Hot right now
             </p>
@@ -77,7 +75,8 @@ export default function TrendingEvents() {
             >
               Trending this week
             </h2>
-          </hgroup>
+          </div>
+          {/* TODO: Add navigation later */}
           <Link
             href="#"
             className="hidden sm:flex items-center gap-1.5 text-sm text-zinc-500 hover:text-white font-mono transition-colors"
@@ -103,6 +102,7 @@ export default function TrendingEvents() {
         <ol className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 list-none p-0">
           {TRENDING.map((ev) => (
             <li key={ev.name}>
+              {/* TODO: Add navigation later */}
               <Link
                 href="#"
                 className="group flex items-stretch bg-zinc-900 border border-zinc-800 hover:border-zinc-600 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 h-full"

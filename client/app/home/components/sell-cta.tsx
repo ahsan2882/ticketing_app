@@ -1,5 +1,3 @@
-"use client";
-
 import Perforations from "@/components/ui/perforations";
 import Link from "next/link";
 
@@ -33,38 +31,42 @@ export default function SellCTA() {
           </p>
         </div>
 
-        <menu className="flex flex-col sm:flex-row gap-3 list-none p-0 m-0 shrink-0">
-          <li>
-            <Link
-              href="#"
-              className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-zinc-950 font-black text-sm tracking-widest uppercase hover:bg-zinc-100 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white group"
-            >
-              Start selling
-              <svg
-                aria-hidden="true"
-                className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
+        <nav>
+          <ul className="list-none p-0 m-0 flex flex-col sm:flex-row gap-3 shrink-0">
+            <li>
+              {/* TODO: Add navigation later */}
+              <Link
+                href="#"
+                className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-zinc-950 font-black text-sm tracking-widest uppercase hover:bg-zinc-100 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white group"
               >
-                <path
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="#"
-              className="flex items-center justify-center px-8 py-4 border border-zinc-600 text-zinc-400 hover:text-white hover:border-zinc-400 text-sm font-bold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-            >
-              Learn more
-            </Link>
-          </li>
-        </menu>
+                Start selling
+                <svg
+                  aria-hidden="true"
+                  className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+            </li>
+            <li>
+              {/* TODO: Add navigation later */}
+              <Link
+                href="#"
+                className="flex items-center justify-center px-8 py-4 border border-zinc-600 text-zinc-400 hover:text-white hover:border-zinc-400 text-sm font-bold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              >
+                Learn more
+              </Link>
+            </li>
+          </ul>
+        </nav>
       </div>
 
       {/* Perf bottom */}
