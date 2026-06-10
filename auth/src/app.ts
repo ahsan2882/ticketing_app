@@ -17,6 +17,7 @@ app.use(
     signed: false,
     secure:
       process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test",
+    maxAge: 3600000,
   }),
 );
 

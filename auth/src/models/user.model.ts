@@ -4,6 +4,7 @@ import { Password } from "../services/password";
 interface UserAttrs {
   email: string;
   password: string;
+  name: string;
 }
 
 interface UserModel extends mongoose.Model<UserDoc> {
@@ -14,6 +15,7 @@ interface UserDoc extends mongoose.Document {
   email: string;
   password: string;
   id: string;
+  name: string;
 }
 
 const userSchema = new mongoose.Schema(
@@ -34,12 +36,23 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      validate: {
+        validator: (v: string): boolean =>
+          /^[A-Za-z]{2,}\s[A-Za-z]{2,}$/.test(v.trim()),
+        message:
+          "Name must be in format 'firstName lastName' with each part at least 2 characters",
+      },
+    },
   },
   {
     toJSON: {
       transform(doc, ret) {
-        const { _id, email } = ret;
-        return { id: _id, email };
+        const { _id, email, name } = ret;
+        return { id: _id, email, name };
       },
     },
     versionKey: false,
@@ -64,4 +77,5 @@ export { User };
 export interface UserPayload {
   id: string;
   email: string;
+  name: string;
 }
