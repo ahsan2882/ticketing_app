@@ -1,6 +1,6 @@
 {
   "name": "@venuepass/common",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "yarn clean && tsc",
-    "clean": "del ./build/*"
+    "clean": "del ./build/*",
+    "prepublishOnly": "yarn build"
   },
   "keywords": [],
   "author": "ahsan2882",
