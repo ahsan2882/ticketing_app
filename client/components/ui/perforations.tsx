@@ -1,5 +1,3 @@
-"use client";
-
 export default function Perforations({
   count = 40,
   className = "",

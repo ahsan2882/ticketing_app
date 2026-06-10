@@ -1,3 +1,4 @@
+import ArrowRightIcon from "@/components/ui/icons/arrow-right-svg";
 import Perforations from "@/components/ui/perforations";
 import Link from "next/link";
 
@@ -40,20 +41,7 @@ export default function SellCTA() {
                 className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-zinc-950 font-black text-sm tracking-widest uppercase hover:bg-zinc-100 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white group"
               >
                 Start selling
-                <svg
-                  aria-hidden="true"
-                  className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <ArrowRightIcon />
               </Link>
             </li>
             <li>

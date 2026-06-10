@@ -14,7 +14,9 @@ export async function getCurrentUser() {
     );
     return data;
   } catch (error) {
-    console.error(error);
+    const message =
+      error instanceof Error ? error.message : "Unknown auth lookup error";
+    console.error("getCurrentUser failed:", message);
     return { currentUser: null };
   }
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import SignUpForm from "@/components/signup/signup-form";
 import TicketIcon from "@/components/ui/icons/ticket-svg";
 import Perforations from "@/components/ui/perforations";
@@ -54,17 +52,11 @@ export default function SignupPage() {
         {/* Ticket card */}
         <article className="relative w-full max-w-md">
           {/* Perforated top edge */}
-          <ol
-            aria-hidden="true"
-            className="flex justify-between px-2 list-none p-0"
-          >
-            {[...Array(22)].map((_, i) => (
-              <li
-                key={i}
-                className="w-2 h-2 rounded-full bg-fuchsia-600 -mb-1"
-              />
-            ))}
-          </ol>
+          <Perforations
+            count={22}
+            className="justify-between px-2 -mb-1"
+            color="bg-fuchsia-600"
+          />
 
           <section className="bg-zinc-900 border border-zinc-800/80 shadow-2xl shadow-violet-950/30">
             {/* Ticket header */}

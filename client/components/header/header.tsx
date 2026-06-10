@@ -107,209 +107,187 @@ export default function Header({ currentUser }: { currentUser: CurrentUser }) {
             </ul>
 
             {/* ── Desktop actions ── */}
-            <menu className="hidden md:flex items-center gap-2 list-none p-0 m-0 shrink-0">
-              {/* Live events badge */}
-              <li>
-                {/* TODO: Add navigation later */}
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 px-5 py-2 text-sm font-mono text-emerald-400 border border-emerald-800 hover:border-emerald-600 hover:bg-emerald-950/40 transition-all duration-150 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  {/* Pulsing dot */}
-                  <span
-                    aria-hidden="true"
-                    className="relative flex h-1.5 w-1.5"
+            <nav className="hidden md:flex items-center gap-2 shrink-0">
+              <ul className="hidden md:flex items-center gap-2 list-none p-0 m-0 shrink-0">
+                {/* Live events badge */}
+                <li>
+                  {/* TODO: Add navigation later */}
+                  <Link
+                    href="#"
+                    className="flex items-center gap-2 px-5 py-2 text-sm font-mono text-emerald-400 border border-emerald-800 hover:border-emerald-600 hover:bg-emerald-950/40 transition-all duration-150 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   >
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-                  </span>
-                  Live now
-                </Link>
-              </li>
-
-              {currentUser ? (
-                <>
-                  {/* Profile button + dropdown */}
-                  <li className="relative">
-                    <button
-                      type="button"
-                      aria-haspopup="true"
-                      aria-expanded={profileOpen}
-                      aria-controls="profile-dropdown"
-                      onClick={() => setProfileOpen((o) => !o)}
-                      className="flex items-center gap-2 px-5 py-1 border border-zinc-700 hover:border-violet-600 bg-zinc-900 hover:bg-zinc-800 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 group"
+                    {/* Pulsing dot */}
+                    <span
+                      aria-hidden="true"
+                      className="relative flex h-1.5 w-1.5"
                     >
-                      {/* Avatar */}
-                      <span className="flex items-center justify-center w-7 h-7 bg-linear-to-br from-violet-600 to-fuchsia-600 shrink-0 text-white text-xs font-black">
-                        {initials}
-                      </span>
-                      <span className="text-sm font-semibold text-zinc-300 group-hover:text-white transition-colors leading-none">
-                        My Profile
-                      </span>
-                      <svg
-                        aria-hidden="true"
-                        className={`w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-all duration-200 ${profileOpen ? "rotate-180" : ""}`}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                    </span>
+                    Live now
+                  </Link>
+                </li>
+
+                {currentUser ? (
+                  <>
+                    {/* Profile button + dropdown */}
+                    <li className="relative">
+                      <button
+                        type="button"
+                        aria-haspopup="true"
+                        aria-expanded={profileOpen}
+                        aria-controls="profile-dropdown"
+                        onClick={() => setProfileOpen((o) => !o)}
+                        className="flex items-center gap-2 px-5 py-1 border border-zinc-700 hover:border-violet-600 bg-zinc-900 hover:bg-zinc-800 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 group"
                       >
-                        <path
-                          d="M19 9l-7 7-7-7"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-
-                    {/* Dropdown menu */}
-                    {profileOpen && (
-                      <div
-                        id="profile-dropdown"
-                        role="menu"
-                        aria-label="Profile menu"
-                        className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-zinc-800 shadow-xl shadow-black/40 z-50"
-                      >
-                        {/* User info header */}
-                        <header className="px-4 py-3 border-b border-zinc-800">
-                          <p className="text-white text-sm font-bold truncate">
-                            {currentUser.name}
-                          </p>
-                          <p className="text-zinc-500 text-xs font-mono truncate mt-0.5">
-                            {currentUser.email}
-                          </p>
-                        </header>
-
-                        <nav aria-label="Profile navigation">
-                          <ul className="list-none p-0 py-1">
-                            {[
-                              {
-                                label: "My Tickets",
-                                icon: "M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z",
-                              },
-                              {
-                                label: "My Listings",
-                                icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-                              },
-                              {
-                                label: "Order History",
-                                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-                              },
-                              {
-                                label: "Settings",
-                                icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
-                              },
-                            ].map(({ label, icon }) => (
-                              <li key={label} role="none">
-                                {/* TODO: Add navigation later */}
-                                <Link
-                                  href="#"
-                                  role="menuitem"
-                                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-all duration-150 focus:outline-none focus-visible:bg-zinc-800"
-                                >
-                                  <svg
-                                    aria-hidden="true"
-                                    className="w-4 h-4 shrink-0 text-zinc-600"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.8"
-                                  >
-                                    <path
-                                      d={icon}
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                  {label}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </nav>
-
-                        {/* Tear line */}
-                        <span
+                        {/* Avatar */}
+                        <span className="flex items-center justify-center w-7 h-7 bg-linear-to-br from-violet-600 to-fuchsia-600 shrink-0 text-white text-xs font-black">
+                          {initials}
+                        </span>
+                        <span className="text-sm font-semibold text-zinc-300 group-hover:text-white transition-colors leading-none">
+                          My Profile
+                        </span>
+                        <svg
                           aria-hidden="true"
-                          className="block mx-4 border-t border-dashed border-zinc-800"
-                        />
+                          className={`w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-all duration-200 ${profileOpen ? "rotate-180" : ""}`}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            d="M19 9l-7 7-7-7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
 
-                        {/* Sign out inside dropdown too */}
-                        <div className="py-1">
-                          <button
-                            type="button"
-                            role="menuitem"
-                            onClick={signOutHandler}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-all duration-150 focus:outline-none focus-visible:bg-red-950/30"
-                          >
-                            <svg
-                              aria-hidden="true"
-                              className="w-4 h-4 shrink-0"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
+                      {/* Dropdown menu */}
+                      {profileOpen && (
+                        <div
+                          id="profile-dropdown"
+                          role="menu"
+                          aria-label="Profile menu"
+                          className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-zinc-800 shadow-xl shadow-black/40 z-50"
+                        >
+                          {/* User info header */}
+                          <header className="px-4 py-3 border-b border-zinc-800">
+                            <p className="text-white text-sm font-bold truncate">
+                              {currentUser.name}
+                            </p>
+                            <p className="text-zinc-500 text-xs font-mono truncate mt-0.5">
+                              {currentUser.email}
+                            </p>
+                          </header>
+
+                          <nav aria-label="Profile navigation">
+                            <ul className="list-none p-0 py-1">
+                              {[
+                                {
+                                  label: "My Tickets",
+                                  icon: "M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z",
+                                },
+                                {
+                                  label: "My Listings",
+                                  icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+                                },
+                                {
+                                  label: "Order History",
+                                  icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+                                },
+                                {
+                                  label: "Settings",
+                                  icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
+                                },
+                              ].map(({ label, icon }) => (
+                                <li key={label} role="none">
+                                  {/* TODO: Add navigation later */}
+                                  <Link
+                                    href="#"
+                                    role="menuitem"
+                                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-all duration-150 focus:outline-none focus-visible:bg-zinc-800"
+                                  >
+                                    <svg
+                                      aria-hidden="true"
+                                      className="w-4 h-4 shrink-0 text-zinc-600"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="1.8"
+                                    >
+                                      <path
+                                        d={icon}
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                    {label}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </nav>
+
+                          {/* Tear line */}
+                          <span
+                            aria-hidden="true"
+                            className="block mx-4 border-t border-dashed border-zinc-800"
+                          />
+
+                          {/* Sign out inside dropdown too */}
+                          <div className="py-1">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={signOutHandler}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-all duration-150 focus:outline-none focus-visible:bg-red-950/30"
                             >
-                              <path
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                            Sign out
-                          </button>
+                              <svg
+                                aria-hidden="true"
+                                className="w-4 h-4 shrink-0"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                              >
+                                <path
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                              Sign out
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </li>
-
-                  <li>
-                    <button
-                      type="button"
-                      onClick={signOutHandler}
-                      className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
-                    >
-                      <svg
-                        aria-hidden="true"
-                        className="w-3.5 h-3.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                      )}
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    {/* Sign in */}
+                    <li>
+                      <Link
+                        href="/auth/signin"
+                        className="relative overflow-hidden flex items-center gap-2 px-5 py-2 text-sm font-bold text-zinc-300 hover:text-white border border-zinc-700 hover:border-zinc-500 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                       >
-                        <path
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Sign out
-                    </button>
-                  </li>
-                </>
-              ) : (
-                <>
-                  {/* Sign in */}
-                  <li>
-                    <Link
-                      href="/auth/signin"
-                      className="relative overflow-hidden flex items-center gap-2 px-5 py-2 text-sm font-bold text-zinc-300 hover:text-white border border-zinc-700 hover:border-zinc-500 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
-                    >
-                      Sign in
-                    </Link>
-                  </li>
+                        Sign in
+                      </Link>
+                    </li>
 
-                  {/* Sign up — gradient fill button */}
-                  <li>
-                    <GradientButton
-                      isLink={true}
-                      linkHref="/auth/signup"
-                      text="Get your pass"
-                    />
-                  </li>
-                </>
-              )}
-            </menu>
+                    {/* Sign up — gradient fill button */}
+                    <li>
+                      <GradientButton
+                        isLink={true}
+                        linkHref="/auth/signup"
+                        text="Get your pass"
+                      />
+                    </li>
+                  </>
+                )}
+              </ul>
+            </nav>
 
             {/* ── Mobile: hamburger ── */}
             <button

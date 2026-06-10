@@ -41,16 +41,8 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
       validate: {
-        validator: (v: string): boolean => {
-          const parts = v.trim().split(/\s+/);
-
-          if (parts.length !== 2) return false;
-
-          const [first, last] = parts;
-          if (!first || !last) return false;
-
-          return first.length >= 2 && last.length >= 2;
-        },
+        validator: (v: string): boolean =>
+          /^[A-Za-z]{2,}\s[A-Za-z]{2,}$/.test(v.trim()),
         message:
           "Name must be in format 'firstName lastName' with each part at least 2 characters",
       },

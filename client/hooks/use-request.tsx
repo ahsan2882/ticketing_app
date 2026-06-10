@@ -2,7 +2,7 @@
 
 import { RequestError } from "@/models/request-error.model";
 import axios from "axios";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 export function useRequest<TResponse = unknown>({
   url,
@@ -18,7 +18,7 @@ export function useRequest<TResponse = unknown>({
   const [errors, setErrors] = useState<RequestError[] | null>(null);
   const [errorFields, setErrorFields] = useState<string[]>([]);
 
-  const doRequest = async () => {
+  const doRequest = useCallback(async () => {
     setErrors(null);
     setErrorFields([]);
     try {
@@ -48,7 +48,7 @@ export function useRequest<TResponse = unknown>({
         console.error("Unexpected error:", err);
       }
     }
-  };
+  }, [url, method, body, onSuccess]);
 
   return { doRequest, errors, errorFields };
 }

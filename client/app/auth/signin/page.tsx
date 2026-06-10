@@ -27,6 +27,24 @@ const recentEvents = [
   },
 ];
 
+const recentlyViewedEvents = [
+  {
+    name: "The Weeknd",
+    date: "Jul 3",
+    color: "bg-violet-900/60 border-violet-700/50",
+  },
+  {
+    name: "Wimbledon Final",
+    date: "Jul 13",
+    color: "bg-emerald-900/60 border-emerald-700/50",
+  },
+  {
+    name: "Cirque du Soleil",
+    date: "Jul 19",
+    color: "bg-amber-900/60 border-amber-700/50",
+  },
+];
+
 export default function SignIn() {
   return (
     <>
@@ -206,7 +224,7 @@ export default function SignIn() {
                   className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-zinc-950"
                 />
 
-                <hgroup className="relative">
+                <div className="relative">
                   <p className="flex items-center gap-2 text-white/50 font-mono text-[12px] tracking-[0.2em] uppercase mb-2">
                     <TicketIcon customClass="w-3.5 h-3.5" />
                     Member Access
@@ -217,7 +235,7 @@ export default function SignIn() {
                   <p className="text-white/60 text-[12px] mt-1 font-mono">
                     Your events are waiting.
                   </p>
-                </hgroup>
+                </div>
 
                 {/* Ticket stub meta top-right */}
                 <aside
@@ -260,23 +278,7 @@ export default function SignIn() {
                 Your recent events
               </p>
               <ol className="flex gap-2 list-none p-0">
-                {[
-                  {
-                    name: "The Weeknd",
-                    date: "Jul 3",
-                    color: "bg-violet-900/60 border-violet-700/50",
-                  },
-                  {
-                    name: "Wimbledon Final",
-                    date: "Jul 13",
-                    color: "bg-emerald-900/60 border-emerald-700/50",
-                  },
-                  {
-                    name: "Cirque du Soleil",
-                    date: "Jul 19",
-                    color: "bg-amber-900/60 border-amber-700/50",
-                  },
-                ].map((ev) => (
+                {recentlyViewedEvents.map((ev) => (
                   <li
                     key={ev.name}
                     className={`flex-1 border ${ev.color} px-2.5 py-2`}

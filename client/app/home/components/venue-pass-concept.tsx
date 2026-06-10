@@ -61,14 +61,14 @@ export default function VenuePassConcept() {
                 {step.n}
               </span>
             </span>
-            <span>
+            <div>
               <strong className="block text-white font-black text-base mb-1.5">
                 {step.title}
               </strong>
               <p className="text-zinc-500 text-sm leading-relaxed">
                 {step.body}
               </p>
-            </span>
+            </div>
           </li>
         ))}
       </ol>

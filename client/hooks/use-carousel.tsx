@@ -24,7 +24,10 @@ export function useCarousel(count: number, interval = 5000) {
     if (safeCount === 0) return;
     setActive((prev) => wrap(prev + 1));
   }, [safeCount, wrap]);
-  const prev = useCallback(() => go(active - 1), [active, go]);
+  const prev = useCallback(() => {
+    if (safeCount === 0) return;
+    setActive((prev) => wrap(prev - 1));
+  }, [safeCount, wrap]);
 
   useEffect(() => {
     timerRef.current = setInterval(next, interval);
