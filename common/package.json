@@ -1,0 +1,21 @@
+{
+  "name": "@venuepass/common",
+  "version": "1.0.2",
+  "description": "",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "files": [
+    "build/**/*"
+  ],
+  "scripts": {
+    "build": "yarn clean && tsc",
+    "clean": "del ./build/*"
+  },
+  "keywords": [],
+  "author": "ahsan2882",
+  "license": "ISC",
+  "devDependencies": {
+    "del-cli": "^7.0.0",
+    "typescript": "^6.0.3"
+  }
+}
