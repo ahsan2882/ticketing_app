@@ -2,9 +2,11 @@ import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
 import jwt from "jsonwebtoken";
 
-import { BadRequestError } from "../errors/bad-request-error";
-import { DatabaseConnectionError } from "../errors/database-connection-error";
-import { validateRequest } from "../middlewares/validate-request";
+import {
+  BadRequestError,
+  DatabaseConnectionError,
+  validateRequest,
+} from "@venuepass/common";
 import { User } from "../models/user.model";
 
 const router = express.Router();

@@ -1,17 +1,15 @@
 FROM node:alpine
 
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN mkdir -p /app && chown node:node /app
+
+USER node
 
 WORKDIR /app
 
-COPY --chown=nextjs:nodejs package.json ./
+COPY --chown=node:node package.json ./
 
 RUN npm install
 
-COPY --chown=nextjs:nodejs . .
-
-USER nextjs
-
-EXPOSE 3000
+COPY --chown=node:node . .
 
 CMD ["npm", "run", "dev"]

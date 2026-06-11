@@ -1,6 +1,6 @@
+import { DatabaseConnectionError } from "@venuepass/common";
 import mongoose from "mongoose";
 import { app } from "./app";
-import { DatabaseConnectionError } from "./errors/database-connection-error";
 
 const start = async () => {
   const nodeEnv = process.env.NODE_ENV;
