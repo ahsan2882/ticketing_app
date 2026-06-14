@@ -7,9 +7,9 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "commonjs",
-    "target": "es2022",
-    "types": [],
+    "module": "es2020",
+    "target": "esnext",
+    "types": ["jest", "node"],
     "moduleResolution": "bundler",
     // For nodejs:
     // "lib": ["esnext"],
@@ -36,13 +36,12 @@
     // Recommended Options
     "strict": true,
     "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "outDir": "./build",
-    "rootDir": "./src"
+    "allowSyntheticDefaultImports": true
   }
 }
