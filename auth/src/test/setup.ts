@@ -4,7 +4,11 @@ import request from "supertest";
 import { app } from "../app";
 
 declare global {
-  var signin: (email?: string, password?: string) => Promise<string[]>;
+  var signin: (
+    email?: string,
+    password?: string,
+    name?: string,
+  ) => Promise<string[]>;
 }
 
 let mongo: MongoMemoryServer;
@@ -35,9 +39,13 @@ afterAll(async () => {
 global.signin = async (
   email = "test@test.com",
   password = "validpass",
+  name = "Test Test",
 ): Promise<string[]> => {
   // Sign up first (idempotent — if user exists the test db was just cleared anyway)
-  await request(app).post("/api/users/signup").send({ email, password });
+  await request(app)
+    .post("/api/users/signup")
+    .send({ email, password, name })
+    .expect(201);
 
   const response = await request(app)
     .post("/api/users/signin")

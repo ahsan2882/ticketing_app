@@ -103,17 +103,21 @@ describe("signout flow - ", () => {
     const agent1 = request.agent(app);
     const agent2 = request.agent(app);
 
-    await agent1
-      .post("/api/users/signup")
-      .send({ email: "user1@test.com", password: "pass1111" });
+    await agent1.post("/api/users/signup").send({
+      email: "user1@test.com",
+      password: "pass1111",
+      name: "Test Test",
+    });
     await agent1
       .post("/api/users/signin")
       .send({ email: "user1@test.com", password: "pass1111" })
       .expect(200);
 
-    await agent2
-      .post("/api/users/signup")
-      .send({ email: "user2@test.com", password: "pass2222" });
+    await agent2.post("/api/users/signup").send({
+      email: "user2@test.com",
+      password: "pass2222",
+      name: "Test Test",
+    });
     await agent2
       .post("/api/users/signin")
       .send({ email: "user2@test.com", password: "pass2222" })

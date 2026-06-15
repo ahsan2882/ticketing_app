@@ -13,8 +13,8 @@ const start = async () => {
   if (!process.env.JWT_KEY) {
     throw new Error("JWT_KEY environment variable is not defined");
   }
-  if (!process.env.AUTH_MONGO_URI) {
-    throw new Error("AUTH_MONGO_URI environment variable is not defined");
+  if (!process.env.TICKETS_MONGO_URI) {
+    throw new Error("TICKETS_MONGO_URI environment variable is not defined");
   }
   try {
     await connectWithRetry();
@@ -30,7 +30,7 @@ const start = async () => {
 const connectWithRetry = async (retries = 10) => {
   for (let i = 0; i < retries; i++) {
     try {
-      await mongoose.connect(process.env.AUTH_MONGO_URI!);
+      await mongoose.connect(process.env.TICKETS_MONGO_URI!);
       console.log("Connected to MongoDB");
       return;
     } catch (err) {

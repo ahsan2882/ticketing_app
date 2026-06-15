@@ -133,7 +133,11 @@ describe("currentUser flow - ", () => {
     // Use the agent directly so the cleared cookie is carried forward
     await agent
       .post("/api/users/signup")
-      .send({ email: "test@test.com", password: "validpass" })
+      .send({
+        email: "test@test.com",
+        password: "validpass",
+        name: "Test Test",
+      })
       .expect(201);
     await agent.post("/api/users/signout").expect(200);
 
@@ -146,7 +150,11 @@ describe("currentUser flow - ", () => {
 
     await agent
       .post("/api/users/signup")
-      .send({ email: "test@test.com", password: "validpass" })
+      .send({
+        email: "test@test.com",
+        password: "validpass",
+        name: "Test Test",
+      })
       .expect(201);
     await agent.post("/api/users/signout").expect(200);
     await agent
