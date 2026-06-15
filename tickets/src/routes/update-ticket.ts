@@ -50,7 +50,7 @@ router.patch(
       .withMessage("City must be a string"),
     body("eventDate")
       .optional()
-      .isISO8601()
+      .isISO8601({ strict: true, strictSeparator: true })
       .toDate()
       .withMessage("Event date must be a valid date"),
     body("eventType")
