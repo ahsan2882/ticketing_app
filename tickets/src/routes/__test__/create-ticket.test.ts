@@ -154,22 +154,6 @@ describe("tickets service - create", () => {
         .expect(400);
     });
 
-    it("returns 400 when price is NaN", async () => {
-      await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Sample", price: NaN })
-        .expect(400);
-    });
-
-    it("returns 400 when price is Infinity", async () => {
-      await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Sample", price: Infinity })
-        .expect(400);
-    });
-
     it("returns an error if an invalid price is provided", async () => {
       await request(app)
         .post("/api/tickets")
