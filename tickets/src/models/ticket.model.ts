@@ -21,14 +21,18 @@ const ticketSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
+      minLength: 3,
     },
     price: {
       type: Number,
       required: true,
+      min: 0.01,
     },
     userId: {
       type: String,
       required: true,
+      immutable: true,
     },
   },
   {

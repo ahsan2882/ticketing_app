@@ -17,6 +17,8 @@ router.patch(
   [
     body("title")
       .optional()
+      .isString()
+      .trim()
       .isLength({ min: 3 })
       .withMessage("Title must be atleast 3 characters"),
     body("price")
@@ -39,7 +41,10 @@ router.patch(
     if (ticket.userId !== req.currentUser?.id) {
       throw new UnauthorizedError();
     }
-    ticket.set({ ...req.body });
+    const updates: Partial<Pick<TicketDoc, "title" | "price">> = {};
+    if (req.body.title !== undefined) updates.title = req.body.title;
+    if (req.body.price !== undefined) updates.price = req.body.price;
+    ticket.set(updates);
     await ticket.save();
     res.status(200).send(ticket);
   },

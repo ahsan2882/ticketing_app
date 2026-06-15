@@ -42,7 +42,10 @@ global.signin = async (
   name = "Test Test",
 ): Promise<string[]> => {
   // Sign up first (idempotent — if user exists the test db was just cleared anyway)
-  await request(app).post("/api/users/signup").send({ email, password, name });
+  await request(app)
+    .post("/api/users/signup")
+    .send({ email, password, name })
+    .expect(201);
 
   const response = await request(app)
     .post("/api/users/signin")
