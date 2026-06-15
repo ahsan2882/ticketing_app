@@ -1,191 +1,544 @@
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";
+import { Ticket } from "../../models/ticket.model";
 
-describe("Tickets service - find", () => {
-  it("returns a 404 if the ticket is not found", async () => {
+const buildTicket = async (
+  overrides: Partial<Parameters<typeof Ticket.build>[0]> = {},
+) => {
+  const ticket = Ticket.build({
+    title: "Taylor Swift Concert",
+    price: 250,
+    userId: new mongoose.Types.ObjectId().toHexString(),
+    artist: "Taylor Swift",
+    venue: "National Stadium",
+    city: "Karachi",
+    eventDate: new Date("2030-12-25T20:00:00.000Z"),
+    eventType: "concert",
+    category: "VIP",
+    seat: "A-12",
+    quantity: 2,
+    description: "Front row VIP ticket",
+    imageUrl: "https://example.com/ticket.jpg",
+    status: "available",
+    ...overrides,
+  });
+
+  await ticket.save();
+  return ticket;
+};
+
+describe("find ticket - invalid ticket id handling", () => {
+  it("returns 404 when id is not a valid ObjectId", async () => {
+    await request(app).get("/api/tickets/not-valid-id").send().expect(404);
+  });
+
+  it("returns 404 when id is an empty-ish invalid string", async () => {
+    await request(app).get("/api/tickets/abc").send().expect(404);
+  });
+
+  it("returns 404 when id contains special characters", async () => {
+    await request(app).get("/api/tickets/@@@###").send().expect(404);
+  });
+
+  it("returns 404 when id is too short to be an ObjectId", async () => {
+    await request(app).get("/api/tickets/123").send().expect(404);
+  });
+
+  it("returns 404 when id is too long to be an ObjectId", async () => {
+    await request(app)
+      .get("/api/tickets/507f1f77bcf86cd799439011123")
+      .send()
+      .expect(404);
+  });
+});
+
+describe("find ticket - not found behavior", () => {
+  it("returns 404 when ticket does not exist", async () => {
     const id = new mongoose.Types.ObjectId().toHexString();
+
     await request(app).get(`/api/tickets/${id}`).send().expect(404);
   });
 
-  it("returns the ticket if the ticket is found", async () => {
+  it("returns 404 for a valid ObjectId that belongs to no ticket", async () => {
+    const id = new mongoose.Types.ObjectId();
+
+    await request(app).get(`/api/tickets/${id}`).send().expect(404);
+  });
+});
+
+describe("find ticket - public unauthenticated response", () => {
+  it("returns 200 when ticket exists", async () => {
+    const ticket = await buildTicket();
+
+    await request(app).get(`/api/tickets/${ticket.id}`).send().expect(200);
+  });
+
+  it("returns public ticket fields", async () => {
+    const ticket = await buildTicket();
+
     const response = await request(app)
-      .post("/api/tickets")
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.title).toEqual("Taylor Swift Concert");
+    expect(response.body.price).toEqual(250);
+    expect(response.body.artist).toEqual("Taylor Swift");
+    expect(response.body.venue).toEqual("National Stadium");
+    expect(response.body.city).toEqual("Karachi");
+    expect(response.body.eventType).toEqual("concert");
+    expect(response.body.category).toEqual("VIP");
+    expect(response.body.quantity).toEqual(2);
+    expect(response.body.status).toEqual("available");
+    expect(response.body.description).toEqual("Front row VIP ticket");
+    expect(response.body.imageUrl).toEqual("https://example.com/ticket.jpg");
+  });
+
+  it("returns ticket id as id", async () => {
+    const ticket = await buildTicket();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.id).toEqual(ticket.id);
+  });
+
+  it("does not expose userId to unauthenticated users", async () => {
+    const ticket = await buildTicket();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.userId).toBeUndefined();
+  });
+
+  it("does not expose seat to unauthenticated users", async () => {
+    const ticket = await buildTicket();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.seat).toBeUndefined();
+  });
+
+  it("does not expose mongoose _id", async () => {
+    const ticket = await buildTicket();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body._id).toBeUndefined();
+  });
+
+  it("does not expose __v", async () => {
+    const ticket = await buildTicket();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.__v).toBeUndefined();
+  });
+
+  it("returns eventDate as an ISO string", async () => {
+    const ticket = await buildTicket({
+      eventDate: new Date("2031-01-10T18:30:00.000Z"),
+    });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.eventDate).toEqual("2031-01-10T18:30:00.000Z");
+  });
+});
+
+describe("find ticket - authenticated response", () => {
+  it("returns 200 for authenticated user", async () => {
+    const ticket = await buildTicket();
+
+    await request(app)
+      .get(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin())
-      .send({ title: "Sample", price: 10 });
-    expect(response.status).toEqual(201);
-    const ticketResponse = await request(app)
-      .get(`/api/tickets/${response.body.id}`)
-      .send();
-    expect(ticketResponse.status).toEqual(200);
-    expect(ticketResponse.body.title).toBe("Sample");
-    expect(ticketResponse.body.price).toBe(10);
+      .send()
+      .expect(200);
   });
 
-  describe("invalid id formats", () => {
-    it("returns 404 for a malformed (non-ObjectId) id", async () => {
-      await request(app).get("/api/tickets/not-a-valid-id").send().expect(404);
-    });
+  it("exposes userId to authenticated users", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
 
-    it("returns 404 for a valid ObjectId that does not exist in the DB", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toHexString();
-      await request(app)
-        .get(`/api/tickets/${nonExistentId}`)
-        .send()
-        .expect(404);
-    });
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
 
-    it("returns 404 for a numeric string id", async () => {
-      await request(app).get("/api/tickets/12345678").send().expect(404);
-    });
-
-    it("returns 404 for a SQL-injection-style id", async () => {
-      await request(app).get("/api/tickets/1' OR '1'='1").send().expect(404);
-    });
+    expect(response.body.userId).toEqual(userId);
   });
 
-  describe("response shape", () => {
-    it("response contains id, title, and price fields", async () => {
-      const created = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Shape Test", price: 25 })
-        .expect(201);
+  it("exposes seat to authenticated users", async () => {
+    const ticket = await buildTicket({ seat: "B-44" });
 
-      const response = await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .send()
-        .expect(200);
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
 
-      expect(response.body).toHaveProperty("id");
-      expect(response.body).toHaveProperty("title");
-      expect(response.body).toHaveProperty("price");
+    expect(response.body.seat).toEqual("B-44");
+  });
+
+  it("returns both public and private fields to authenticated users", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+
+    const ticket = await buildTicket({
+      userId,
+      seat: "C-10",
     });
 
-    it("returns exact title and price values that were saved", async () => {
-      const created = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Exact Match", price: 99.99 })
-        .expect(201);
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
 
-      const response = await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .send()
-        .expect(200);
-
-      expect(response.body.title).toEqual("Exact Match");
-      expect(response.body.price).toEqual(99.99);
-    });
-
-    it("returned id matches the requested id", async () => {
-      const created = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "ID Check", price: 10 })
-        .expect(201);
-
-      const response = await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .send()
-        .expect(200);
-
-      expect(response.body.id).toEqual(created.body.id);
+    expect(response.body).toMatchObject({
+      id: ticket.id,
+      title: "Taylor Swift Concert",
+      price: 250,
+      artist: "Taylor Swift",
+      venue: "National Stadium",
+      city: "Karachi",
+      eventType: "concert",
+      category: "VIP",
+      quantity: 2,
+      status: "available",
+      description: "Front row VIP ticket",
+      imageUrl: "https://example.com/ticket.jpg",
+      userId,
+      seat: "C-10",
     });
   });
 
-  describe("accessibility", () => {
-    it("is publicly accessible without authentication", async () => {
-      const created = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Public Ticket", price: 10 })
-        .expect(201);
+  it("does not require authenticated user to own the ticket", async () => {
+    const ownerId = new mongoose.Types.ObjectId().toHexString();
 
-      await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .send()
-        .expect(200);
-    });
+    const ticket = await buildTicket({ userId: ownerId });
 
-    it("returns the same ticket for an authenticated and unauthenticated request", async () => {
-      const created = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Auth Parity", price: 10 })
-        .expect(201);
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
 
-      const unauthRes = await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .send()
-        .expect(200);
-
-      const authRes = await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .set("Cookie", await global.signin())
-        .send()
-        .expect(200);
-
-      expect(unauthRes.body.id).toEqual(authRes.body.id);
-      expect(unauthRes.body.title).toEqual(authRes.body.title);
-    });
+    expect(response.body.userId).toEqual(ownerId);
   });
 
-  describe("ticket isolation", () => {
-    it("fetching one ticket does not return another ticket's data", async () => {
-      const first = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "First", price: 10 })
-        .expect(201);
+  it("does not expose mongoose _id to authenticated users", async () => {
+    const ticket = await buildTicket();
 
-      const second = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Second", price: 20 })
-        .expect(201);
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
 
-      const response = await request(app)
-        .get(`/api/tickets/${first.body.id}`)
-        .send()
-        .expect(200);
-
-      expect(response.body.id).toEqual(first.body.id);
-      expect(response.body.title).toEqual("First");
-      expect(response.body.id).not.toEqual(second.body.id);
-    });
-
-    it("deleted (non-existent) id returns 404 even if other tickets exist", async () => {
-      await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Existing", price: 10 })
-        .expect(201);
-
-      const ghostId = new mongoose.Types.ObjectId().toHexString();
-      await request(app).get(`/api/tickets/${ghostId}`).send().expect(404);
-    });
+    expect(response.body._id).toBeUndefined();
   });
 
-  describe("repeated access", () => {
-    it("fetching the same ticket twice returns consistent data", async () => {
-      const created = await request(app)
-        .post("/api/tickets")
-        .set("Cookie", await global.signin())
-        .send({ title: "Consistent", price: 30 })
-        .expect(201);
+  it("does not expose __v to authenticated users", async () => {
+    const ticket = await buildTicket();
 
-      const first = await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .send()
-        .expect(200);
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
 
-      const second = await request(app)
-        .get(`/api/tickets/${created.body.id}`)
-        .send()
-        .expect(200);
+    expect(response.body.__v).toBeUndefined();
+  });
+});
 
-      expect(first.body).toEqual(second.body);
+describe("find ticket - field projection behavior", () => {
+  it("does not return fields outside PUBLIC_FIELDS for unauthenticated users", async () => {
+    const ticket = await buildTicket();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(Object.keys(response.body).sort()).toEqual(
+      [
+        "id",
+        "title",
+        "price",
+        "artist",
+        "venue",
+        "city",
+        "eventDate",
+        "eventType",
+        "category",
+        "quantity",
+        "status",
+        "description",
+        "imageUrl",
+      ].sort(),
+    );
+  });
+
+  it("does not return fields outside PRIVATE_FIELDS for authenticated users", async () => {
+    const ticket = await buildTicket();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
+
+    expect(Object.keys(response.body).sort()).toEqual(
+      [
+        "id",
+        "title",
+        "price",
+        "artist",
+        "venue",
+        "city",
+        "eventDate",
+        "eventType",
+        "category",
+        "quantity",
+        "status",
+        "description",
+        "imageUrl",
+        "userId",
+        "seat",
+      ].sort(),
+    );
+  });
+
+  it("returns description when it exists", async () => {
+    const ticket = await buildTicket({
+      description: "This is a detailed description",
     });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.description).toEqual("This is a detailed description");
+  });
+
+  it("returns imageUrl when it exists", async () => {
+    const ticket = await buildTicket({
+      imageUrl: "https://example.com/custom-image.png",
+    });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.imageUrl).toEqual(
+      "https://example.com/custom-image.png",
+    );
+  });
+});
+
+describe("find ticket - ticket data variations", () => {
+  it("returns default quantity when quantity is not provided", async () => {
+    const ticket = Ticket.build({
+      title: "Comedy Night",
+      price: 50,
+      userId: new mongoose.Types.ObjectId().toHexString(),
+      artist: "Ali Gul Pir",
+      venue: "Arts Council",
+      city: "Karachi",
+      eventDate: new Date("2032-02-01T19:00:00.000Z"),
+      eventType: "comedy",
+      category: "GA",
+      seat: "G-1",
+    });
+
+    await ticket.save();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.quantity).toEqual(1);
+  });
+
+  it("returns default status when status is not provided", async () => {
+    const ticket = Ticket.build({
+      title: "Comedy Night",
+      price: 50,
+      userId: new mongoose.Types.ObjectId().toHexString(),
+      artist: "Ali Gul Pir",
+      venue: "Arts Council",
+      city: "Karachi",
+      eventDate: new Date("2032-02-01T19:00:00.000Z"),
+      eventType: "comedy",
+      category: "GA",
+      seat: "G-1",
+    });
+
+    await ticket.save();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.status).toEqual("available");
+  });
+
+  it("returns sold status correctly", async () => {
+    const ticket = await buildTicket({ status: "sold" });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.status).toEqual("sold");
+  });
+
+  it("returns reserved status correctly", async () => {
+    const ticket = await buildTicket({ status: "reserved" });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.status).toEqual("reserved");
+  });
+
+  it("returns cancelled status correctly", async () => {
+    const ticket = await buildTicket({ status: "cancelled" });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.status).toEqual("cancelled");
+  });
+
+  it("returns sports event type correctly", async () => {
+    const ticket = await buildTicket({ eventType: "sports" });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.eventType).toEqual("sports");
+  });
+
+  it("returns theatre event type correctly", async () => {
+    const ticket = await buildTicket({ eventType: "theatre" });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.eventType).toEqual("theatre");
+  });
+
+  it("returns VIP category correctly", async () => {
+    const ticket = await buildTicket({ category: "VIP" });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.category).toEqual("VIP");
+  });
+
+  it("returns balcony category correctly", async () => {
+    const ticket = await buildTicket({ category: "balcony" });
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(response.body.category).toEqual("balcony");
+  });
+});
+
+describe("find ticket - multiple tickets", () => {
+  it("returns the requested ticket, not another ticket", async () => {
+    const firstTicket = await buildTicket({
+      title: "First Ticket",
+      price: 100,
+      seat: "A-1",
+    });
+
+    const secondTicket = await buildTicket({
+      title: "Second Ticket",
+      price: 200,
+      seat: "B-1",
+    });
+
+    const response = await request(app)
+      .get(`/api/tickets/${secondTicket.id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(200);
+
+    expect(response.body.id).toEqual(secondTicket.id);
+    expect(response.body.title).toEqual("Second Ticket");
+    expect(response.body.price).toEqual(200);
+    expect(response.body.seat).toEqual("B-1");
+
+    expect(response.body.id).not.toEqual(firstTicket.id);
+    expect(response.body.title).not.toEqual("First Ticket");
+  });
+
+  it("keeps public projection consistent across different tickets", async () => {
+    const firstTicket = await buildTicket({
+      title: "Public Ticket One",
+      seat: "A-1",
+    });
+
+    const secondTicket = await buildTicket({
+      title: "Public Ticket Two",
+      seat: "B-1",
+    });
+
+    const firstResponse = await request(app)
+      .get(`/api/tickets/${firstTicket.id}`)
+      .send()
+      .expect(200);
+
+    const secondResponse = await request(app)
+      .get(`/api/tickets/${secondTicket.id}`)
+      .send()
+      .expect(200);
+
+    expect(firstResponse.body.seat).toBeUndefined();
+    expect(firstResponse.body.userId).toBeUndefined();
+
+    expect(secondResponse.body.seat).toBeUndefined();
+    expect(secondResponse.body.userId).toBeUndefined();
   });
 });
