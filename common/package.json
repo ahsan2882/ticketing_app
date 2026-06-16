@@ -1,6 +1,6 @@
 {
   "name": "@venuepass/common",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -28,5 +28,6 @@
     "express": "^5.2.1",
     "express-validator": "^7.3.2",
     "jsonwebtoken": "^9.0.3"
-  }
+  },
+  "packageManager": "yarn@1.22.22"
 }
