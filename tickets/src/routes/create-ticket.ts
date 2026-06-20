@@ -120,7 +120,7 @@ router.post(
       artist: ticket.artist,
       venue: ticket.venue,
       city: ticket.city,
-      eventDate: ticket.eventDate,
+      eventDate: ticket.eventDate.toString(),
       eventType: ticket.eventType,
       category: ticket.category,
       seat: ticket.seat,

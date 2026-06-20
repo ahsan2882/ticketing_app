@@ -147,7 +147,9 @@ router.patch(
       ...(artist !== undefined && { artist: ticket.artist }),
       ...(venue !== undefined && { venue: ticket.venue }),
       ...(city !== undefined && { city: ticket.city }),
-      ...(eventDate !== undefined && { eventDate: ticket.eventDate }),
+      ...(eventDate !== undefined && {
+        eventDate: ticket.eventDate.toString(),
+      }),
       ...(eventType !== undefined && { eventType: ticket.eventType }),
       ...(category !== undefined && { category: ticket.category }),
       ...(seat !== undefined && { seat: ticket.seat }),
