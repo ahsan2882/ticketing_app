@@ -1,7 +1,7 @@
 {
   "name": "@venuepass/common",
-  "version": "1.0.19",
-  "description": "",
+  "version": "1.0.20",
+  "description": "Shared common package for VenuePass application",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
   "files": [
@@ -14,7 +14,7 @@
   },
   "keywords": [],
   "author": "ahsan2882",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "del-cli": "^7.0.0",
     "typescript": "^6.0.3"
