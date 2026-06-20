@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 import {
   BadRequestError,
-  DatabaseConnectionError,
+  ServiceConnectionError,
   validateRequest,
 } from "@venuepass/common";
 import { User } from "../models/user.model";
@@ -41,7 +41,7 @@ router.post(
       await user.save();
     } catch (err) {
       console.error(err);
-      throw new DatabaseConnectionError();
+      throw new ServiceConnectionError("Error connecting to database");
     }
     const userJwt = jwt.sign(
       { email: user.email, id: user.id, name: user.name },

@@ -12,12 +12,16 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /app
 
+RUN npm install -g corepack && corepack enable
+
 COPY package.json ./
+
+COPY yarn.lock ./
 
 COPY .npmrc ./
 
-RUN npm install --omit=dev
+RUN yarn install --frozen-lockfile --production=true
 
 COPY . .
 
-CMD ["npm", "start"]
+CMD ["yarn", "start"]

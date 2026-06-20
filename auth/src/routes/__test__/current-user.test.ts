@@ -1,6 +1,6 @@
+import jwt from "jsonwebtoken";
 import request from "supertest";
 import { app } from "../../app";
-import jwt from "jsonwebtoken";
 
 describe("currentUser flow - ", () => {
   it("returns 200 with currentUser: null when no session cookie is present", async () => {

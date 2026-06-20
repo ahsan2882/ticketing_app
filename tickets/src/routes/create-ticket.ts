@@ -1,7 +1,9 @@
 import { requireAuth, validateRequest } from "@venuepass/common";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
+import { TicketCreatedPublisher } from "../events/publishers/ticket-created.publisher";
 import { Ticket } from "../models/ticket.model";
+import { natsClient } from "../nats-client";
 
 const router = express.Router();
 
@@ -54,7 +56,7 @@ router.post(
       ])
       .withMessage("Invalid event type"),
     body("category")
-      .isIn(["GA", "VIP", "floor", "balcony", "box"])
+      .isIn(["standard", "VIP", "floor", "balcony", "box"])
       .withMessage("Invalid ticket category"),
     body("seat")
       .isString()
@@ -110,6 +112,22 @@ router.post(
       imageUrl,
     });
     await ticket.save();
+    await new TicketCreatedPublisher(natsClient.client).publish({
+      id: ticket.id,
+      title: ticket.title,
+      price: ticket.price,
+      userId: ticket.userId,
+      artist: ticket.artist,
+      venue: ticket.venue,
+      city: ticket.city,
+      eventDate: ticket.eventDate,
+      eventType: ticket.eventType,
+      category: ticket.category,
+      seat: ticket.seat,
+      ...(ticket.quantity && { quantity: ticket.quantity }),
+      ...(ticket.description && { description: ticket.description }),
+      ...(ticket.imageUrl && { imageUrl: ticket.imageUrl }),
+    });
     res.status(201).send(ticket);
   },
 );

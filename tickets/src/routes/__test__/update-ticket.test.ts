@@ -1,8 +1,11 @@
+import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";
-
+import { TicketUpdatedPublisher } from "../../events/publishers/ticket-updated-publisher";
 import { Ticket } from "../../models/ticket.model";
+
+jest.mock("../../events/publishers/ticket-updated-publisher");
 
 const buildTicket = async (
   overrides: Partial<Parameters<typeof Ticket.build>[0]> = {},
@@ -15,13 +18,13 @@ const buildTicket = async (
     venue: "Original Venue",
     city: "Karachi",
     eventDate: new Date("2030-01-01T20:00:00.000Z"),
-    eventType: "concert",
-    category: "GA",
+    eventType: EventType.Concert,
+    category: TicketCategory.STANDARD,
     seat: "A-1",
     quantity: 1,
     description: "Original description",
     imageUrl: "https://example.com/original.jpg",
-    status: "available",
+    status: TicketStatus.AVAILABLE,
     ...overrides,
   });
 
@@ -683,7 +686,7 @@ describe("update ticket - enum validation", () => {
   });
 
   it.each([
-    "concert",
+    EventType.Concert,
     "sports",
     "theatre",
     "comedy",
@@ -702,7 +705,7 @@ describe("update ticket - enum validation", () => {
     expect(response.body.eventType).toEqual(eventType);
   });
 
-  it.each(["GA", "VIP", "floor", "balcony", "box"] as const)(
+  it.each([TicketCategory.STANDARD, "VIP", "floor", "balcony", "box"] as const)(
     "accepts valid category: %s",
     async (category) => {
       const userId = new mongoose.Types.ObjectId().toHexString();
@@ -718,7 +721,7 @@ describe("update ticket - enum validation", () => {
     },
   );
 
-  it.each(["available", "sold", "reserved", "cancelled"] as const)(
+  it.each([TicketStatus.AVAILABLE, "sold", "reserved", "cancelled"] as const)(
     "accepts valid status: %s",
     async (status) => {
       const userId = new mongoose.Types.ObjectId().toHexString();
@@ -802,5 +805,137 @@ describe("update ticket - date, quantity, and URL validation", () => {
       .expect(200);
 
     expect(response.body.imageUrl).toEqual("https://example.com/ticket.png");
+  });
+});
+
+describe("update ticket - event publishing", () => {
+  beforeEach(() => {
+    (TicketUpdatedPublisher as jest.Mock).mockClear();
+  });
+
+  it("publishes a TicketUpdated event after a successful update", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send(validUpdatePayload)
+      .expect(200);
+
+    expect(TicketUpdatedPublisher).toHaveBeenCalledTimes(1);
+
+    const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
+      .instances[0];
+    expect(publisherInstance.publish).toHaveBeenCalledTimes(1);
+
+    const publishedData = publisherInstance.publish.mock.calls[0][0];
+    expect(publishedData).toMatchObject({
+      id: ticket.id,
+      userId,
+      title: validUpdatePayload.title,
+      price: validUpdatePayload.price,
+      artist: validUpdatePayload.artist,
+      venue: validUpdatePayload.venue,
+      city: validUpdatePayload.city,
+      eventType: validUpdatePayload.eventType,
+      category: validUpdatePayload.category,
+      seat: validUpdatePayload.seat,
+      quantity: validUpdatePayload.quantity,
+      description: validUpdatePayload.description,
+      imageUrl: validUpdatePayload.imageUrl,
+      status: validUpdatePayload.status,
+    });
+  });
+
+  it("includes only the fields that were actually updated", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, title: "Original Title" });
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ title: "Only Title Updated" })
+      .expect(200);
+
+    const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
+      .instances[0];
+    const publishedData = publisherInstance.publish.mock.calls[0][0];
+
+    expect(publishedData).toEqual({
+      id: ticket.id,
+      userId,
+      title: "Only Title Updated",
+    });
+  });
+
+  it("always includes id and userId even when body is empty", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({})
+      .expect(200);
+
+    const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
+      .instances[0];
+    const publishedData = publisherInstance.publish.mock.calls[0][0];
+
+    expect(publishedData).toEqual({
+      id: ticket.id,
+      userId,
+    });
+  });
+
+  it("does not publish an event when validation fails", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ title: "" })
+      .expect(400);
+
+    expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
+  });
+
+  it("does not publish an event when the ticket is not found", async () => {
+    const id = new mongoose.Types.ObjectId().toHexString();
+
+    await request(app)
+      .patch(`/api/tickets/${id}`)
+      .set("Cookie", await global.signin())
+      .send({ title: "Updated Title" })
+      .expect(404);
+
+    expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
+  });
+
+  it("does not publish an event when the user does not own the ticket", async () => {
+    const ticket = await buildTicket({
+      userId: new mongoose.Types.ObjectId().toHexString(),
+    });
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send({ title: "Updated Title" })
+      .expect(401);
+
+    expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
+  });
+
+  it("does not publish an event when the request is unauthenticated", async () => {
+    const ticket = await buildTicket();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .send({ title: "Updated Title" })
+      .expect(401);
+
+    expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
   });
 });

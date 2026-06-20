@@ -1,5 +1,5 @@
-import { CustomError } from "./base-error";
 import type { SerializedError } from "../models/serialize-error.model";
+import { CustomError } from "./base-error";
 
 export class NotFoundError extends CustomError {
   statusCode = 404;

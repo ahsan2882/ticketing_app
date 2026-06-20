@@ -6,8 +6,10 @@ import {
 } from "@venuepass/common";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
-import { Ticket, type TicketDoc } from "../models/ticket.model";
 import mongoose from "mongoose";
+import { TicketUpdatedPublisher } from "../events/publishers/ticket-updated-publisher";
+import { Ticket, type TicketDoc } from "../models/ticket.model";
+import { natsClient } from "../nats-client";
 
 const router = express.Router();
 
@@ -66,7 +68,7 @@ router.patch(
       .withMessage("Invalid event type"),
     body("category")
       .optional()
-      .isIn(["GA", "VIP", "floor", "balcony", "box"])
+      .isIn(["standard", "VIP", "floor", "balcony", "box"])
       .withMessage("Invalid ticket category"),
     body("seat")
       .optional()
@@ -141,6 +143,23 @@ router.patch(
       ...(status !== undefined && { status }),
     });
     await ticket.save();
+    await new TicketUpdatedPublisher(natsClient.client).publish({
+      id: ticket.id,
+      userId: ticket.userId,
+      ...(title !== undefined && { title: ticket.title }),
+      ...(price !== undefined && { price: ticket.price }),
+      ...(artist !== undefined && { artist: ticket.artist }),
+      ...(venue !== undefined && { venue: ticket.venue }),
+      ...(city !== undefined && { city: ticket.city }),
+      ...(eventDate !== undefined && { eventDate: ticket.eventDate }),
+      ...(eventType !== undefined && { eventType: ticket.eventType }),
+      ...(category !== undefined && { category: ticket.category }),
+      ...(seat !== undefined && { seat: ticket.seat }),
+      ...(quantity !== undefined && { quantity: ticket.quantity }),
+      ...(description !== undefined && { description: ticket.description }),
+      ...(imageUrl !== undefined && { imageUrl: ticket.imageUrl }),
+      ...(status !== undefined && { status: ticket.status }),
+    });
     res.status(200).send(ticket);
   },
 );

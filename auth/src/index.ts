@@ -1,4 +1,4 @@
-import { DatabaseConnectionError } from "@venuepass/common";
+import { ServiceConnectionError } from "@venuepass/common";
 import mongoose from "mongoose";
 import { app } from "./app";
 
@@ -23,7 +23,7 @@ const start = async () => {
     });
   } catch (err) {
     console.error("Fatal startup error:", err);
-    throw new DatabaseConnectionError();
+    process.exit(1);
   }
 };
 
@@ -39,7 +39,7 @@ const connectWithRetry = async (retries = 10) => {
     }
   }
 
-  throw new DatabaseConnectionError();
+  throw new ServiceConnectionError("Error connecting to database");
 };
 
 void start();

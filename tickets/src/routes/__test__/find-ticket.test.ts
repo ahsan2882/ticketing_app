@@ -1,3 +1,4 @@
+import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";
@@ -14,13 +15,13 @@ const buildTicket = async (
     venue: "National Stadium",
     city: "Karachi",
     eventDate: new Date("2030-12-25T20:00:00.000Z"),
-    eventType: "concert",
-    category: "VIP",
+    eventType: EventType.Comedy,
+    category: TicketCategory.STANDARD,
     seat: "A-12",
     quantity: 2,
     description: "Front row VIP ticket",
     imageUrl: "https://example.com/ticket.jpg",
-    status: "available",
+    status: TicketStatus.AVAILABLE,
     ...overrides,
   });
 
@@ -87,10 +88,10 @@ describe("find ticket - public unauthenticated response", () => {
     expect(response.body.artist).toEqual("Taylor Swift");
     expect(response.body.venue).toEqual("National Stadium");
     expect(response.body.city).toEqual("Karachi");
-    expect(response.body.eventType).toEqual("concert");
-    expect(response.body.category).toEqual("VIP");
+    expect(response.body.eventType).toEqual(EventType.Comedy);
+    expect(response.body.category).toEqual(TicketCategory.VIP);
     expect(response.body.quantity).toEqual(2);
-    expect(response.body.status).toEqual("available");
+    expect(response.body.status).toEqual(TicketStatus.AVAILABLE);
     expect(response.body.description).toEqual("Front row VIP ticket");
     expect(response.body.imageUrl).toEqual("https://example.com/ticket.jpg");
   });
@@ -221,10 +222,10 @@ describe("find ticket - authenticated response", () => {
       artist: "Taylor Swift",
       venue: "National Stadium",
       city: "Karachi",
-      eventType: "concert",
-      category: "VIP",
+      eventType: EventType.Comedy,
+      category: TicketCategory.VIP,
       quantity: 2,
-      status: "available",
+      status: TicketStatus.AVAILABLE,
       description: "Front row VIP ticket",
       imageUrl: "https://example.com/ticket.jpg",
       userId,
@@ -368,8 +369,8 @@ describe("find ticket - ticket data variations", () => {
       venue: "Arts Council",
       city: "Karachi",
       eventDate: new Date("2032-02-01T19:00:00.000Z"),
-      eventType: "comedy",
-      category: "GA",
+      eventType: EventType.Comedy,
+      category: TicketCategory.STANDARD,
       seat: "G-1",
     });
 
@@ -392,8 +393,8 @@ describe("find ticket - ticket data variations", () => {
       venue: "Arts Council",
       city: "Karachi",
       eventDate: new Date("2032-02-01T19:00:00.000Z"),
-      eventType: "comedy",
-      category: "GA",
+      eventType: EventType.Comedy,
+      category: TicketCategory.STANDARD,
       seat: "G-1",
     });
 
@@ -404,84 +405,84 @@ describe("find ticket - ticket data variations", () => {
       .send()
       .expect(200);
 
-    expect(response.body.status).toEqual("available");
+    expect(response.body.status).toEqual(TicketStatus.AVAILABLE);
   });
 
   it("returns sold status correctly", async () => {
-    const ticket = await buildTicket({ status: "sold" });
+    const ticket = await buildTicket({ status: TicketStatus.SOLD });
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
       .expect(200);
 
-    expect(response.body.status).toEqual("sold");
+    expect(response.body.status).toEqual(TicketStatus.SOLD);
   });
 
   it("returns reserved status correctly", async () => {
-    const ticket = await buildTicket({ status: "reserved" });
+    const ticket = await buildTicket({ status: TicketStatus.RESERVED });
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
       .expect(200);
 
-    expect(response.body.status).toEqual("reserved");
+    expect(response.body.status).toEqual(TicketStatus.RESERVED);
   });
 
   it("returns cancelled status correctly", async () => {
-    const ticket = await buildTicket({ status: "cancelled" });
+    const ticket = await buildTicket({ status: TicketStatus.CANCELLED });
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
       .expect(200);
 
-    expect(response.body.status).toEqual("cancelled");
+    expect(response.body.status).toEqual(TicketStatus.CANCELLED);
   });
 
   it("returns sports event type correctly", async () => {
-    const ticket = await buildTicket({ eventType: "sports" });
+    const ticket = await buildTicket({ eventType: EventType.Sports });
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
       .expect(200);
 
-    expect(response.body.eventType).toEqual("sports");
+    expect(response.body.eventType).toEqual(EventType.Sports);
   });
 
   it("returns theatre event type correctly", async () => {
-    const ticket = await buildTicket({ eventType: "theatre" });
+    const ticket = await buildTicket({ eventType: EventType.Theatre });
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
       .expect(200);
 
-    expect(response.body.eventType).toEqual("theatre");
+    expect(response.body.eventType).toEqual(EventType.Theatre);
   });
 
   it("returns VIP category correctly", async () => {
-    const ticket = await buildTicket({ category: "VIP" });
+    const ticket = await buildTicket({ category: TicketCategory.VIP });
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
       .expect(200);
 
-    expect(response.body.category).toEqual("VIP");
+    expect(response.body.category).toEqual(TicketCategory.VIP);
   });
 
   it("returns balcony category correctly", async () => {
-    const ticket = await buildTicket({ category: "balcony" });
+    const ticket = await buildTicket({ category: TicketCategory.BALCONY });
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
       .expect(200);
 
-    expect(response.body.category).toEqual("balcony");
+    expect(response.body.category).toEqual(TicketCategory.BALCONY);
   });
 });
 

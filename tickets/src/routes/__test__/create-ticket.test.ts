@@ -1,6 +1,10 @@
+import { EventType, TicketCategory } from "@venuepass/common";
 import request from "supertest";
 import { app } from "../../app";
+import { TicketCreatedPublisher } from "../../events/publishers/ticket-created.publisher";
 import { Ticket } from "../../models/ticket.model";
+
+jest.mock("../../events/publishers/ticket-created.publisher.ts");
 
 const validTicketPayload = () => ({
   title: "Rock Night 2026",
@@ -8,9 +12,9 @@ const validTicketPayload = () => ({
   artist: "The Rolling Stones",
   venue: "Madison Square Garden",
   city: "New York",
-  eventDate: new Date(Date.now() + 86_400_000).toISOString(), // tomorrow
-  eventType: "concert",
-  category: "VIP",
+  eventDate: new Date(Date.now() + 86_400_000), // tomorrow
+  eventType: EventType.Concert,
+  category: TicketCategory.VIP,
   seat: "A12",
   quantity: 2,
   description: "An unforgettable night of rock.",
@@ -701,5 +705,85 @@ describe("create tickets — content type", () => {
       .expect(201);
 
     expect(headers["content-type"]).toMatch(/application\/json/);
+  });
+});
+
+describe("create tickets — event publishing", () => {
+  let cookie: string[];
+
+  beforeEach(async () => {
+    cookie = await global.signin();
+    (TicketCreatedPublisher as jest.Mock).mockClear();
+  });
+
+  it("publishes a TicketCreated event after a successful save", async () => {
+    const payload = validTicketPayload();
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(payload)
+      .expect(201);
+
+    expect(TicketCreatedPublisher).toHaveBeenCalledTimes(1);
+
+    const publisherInstance = (TicketCreatedPublisher as jest.Mock).mock
+      .instances[0];
+    expect(publisherInstance.publish).toHaveBeenCalledTimes(1);
+    expect(publisherInstance.publish).toHaveBeenCalledTimes(1);
+
+    const publishedData = publisherInstance.publish.mock.calls[0][0];
+    expect(publishedData).toMatchObject({
+      id: body.id,
+      title: payload.title,
+      price: payload.price,
+      userId: body.userId,
+      artist: payload.artist,
+      venue: payload.venue,
+      city: payload.city,
+      eventType: payload.eventType,
+      category: payload.category,
+      seat: payload.seat,
+      quantity: payload.quantity,
+      description: payload.description,
+      imageUrl: payload.imageUrl,
+    });
+  });
+
+  it("omits description and imageUrl from the event when not provided, defaults quantity to 1", async () => {
+    const { quantity, description, imageUrl, ...required } =
+      validTicketPayload();
+
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(required)
+      .expect(201);
+
+    const publisherInstance = (TicketCreatedPublisher as jest.Mock).mock
+      .instances[0];
+    const publishedData = publisherInstance.publish.mock.calls[0][0];
+
+    expect(publishedData.quantity).toBe(1);
+    expect(publishedData.description).toBeUndefined();
+    expect(publishedData.imageUrl).toBeUndefined();
+  });
+
+  it("does not publish an event when validation fails", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send({ ...validTicketPayload(), title: "" })
+      .expect(400);
+
+    expect(TicketCreatedPublisher).not.toHaveBeenCalled();
+  });
+
+  it("does not publish an event when the request is unauthenticated", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .send(validTicketPayload())
+      .expect(401);
+
+    expect(TicketCreatedPublisher).not.toHaveBeenCalled();
   });
 });

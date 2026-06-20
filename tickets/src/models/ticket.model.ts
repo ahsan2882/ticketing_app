@@ -1,14 +1,9 @@
+import type {
+  EventType,
+  TicketCategory,
+  TicketStatus,
+} from "@venuepass/common";
 import mongoose from "mongoose";
-
-type EventType =
-  | "concert"
-  | "sports"
-  | "theatre"
-  | "comedy"
-  | "festival"
-  | "conference";
-type TicketCategory = "GA" | "VIP" | "floor" | "balcony" | "box";
-type TicketStatus = "available" | "sold" | "reserved" | "cancelled";
 
 interface TicketAttrs {
   title: string;
@@ -100,7 +95,7 @@ const ticketSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["GA", "VIP", "floor", "balcony", "box"],
+      enum: ["standard", "VIP", "floor", "balcony", "box"],
       required: true,
     },
     seat: {
@@ -176,10 +171,4 @@ ticketSchema.statics.build = (attrs: TicketAttrs) => {
 
 const Ticket = mongoose.model<TicketDoc, TicketModel>("Ticket", ticketSchema);
 
-export {
-  Ticket,
-  type TicketDoc,
-  type EventType,
-  type TicketCategory,
-  type TicketStatus,
-};
+export { Ticket, type TicketDoc };
