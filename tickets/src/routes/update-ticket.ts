@@ -1,6 +1,9 @@
 import {
+  EventType,
   NotFoundError,
   requireAuth,
+  TicketCategory,
+  TicketStatus,
   UnauthorizedError,
   validateRequest,
 } from "@venuepass/common";
@@ -57,18 +60,11 @@ router.patch(
       .withMessage("Event date must be a valid date"),
     body("eventType")
       .optional()
-      .isIn([
-        "concert",
-        "sports",
-        "theatre",
-        "comedy",
-        "festival",
-        "conference",
-      ])
+      .isIn(Object.values(EventType))
       .withMessage("Invalid event type"),
     body("category")
       .optional()
-      .isIn(["standard", "VIP", "floor", "balcony", "box"])
+      .isIn(Object.values(TicketCategory))
       .withMessage("Invalid ticket category"),
     body("seat")
       .optional()
@@ -94,7 +90,7 @@ router.patch(
       .withMessage("Image URL must be a valid URL"),
     body("status")
       .optional()
-      .isIn(["available", "sold", "reserved", "cancelled"])
+      .isIn(Object.values(TicketStatus))
       .withMessage("Invalid status"),
   ],
   validateRequest,

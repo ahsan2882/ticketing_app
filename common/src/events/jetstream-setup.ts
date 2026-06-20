@@ -16,7 +16,7 @@ export class JetStreamSetupService {
     } catch {
       await this.jetStreamManager.streams.add({
         name: STREAM_NAME,
-        subjects: [SUBJECTS.TicketCreated],
+        subjects: Object.values(SUBJECTS),
       });
     }
   }

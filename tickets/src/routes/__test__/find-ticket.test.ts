@@ -16,7 +16,7 @@ const buildTicket = async (
     city: "Karachi",
     eventDate: new Date("2030-12-25T20:00:00.000Z"),
     eventType: EventType.Comedy,
-    category: TicketCategory.STANDARD,
+    category: TicketCategory.VIP,
     seat: "A-12",
     quantity: 2,
     description: "Front row VIP ticket",

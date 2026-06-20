@@ -15,7 +15,7 @@ export interface TicketUpdatedEvent {
     artist?: string;
     venue?: string;
     city?: string;
-    eventDate?: Date;
+    eventDate?: string;
     eventType?: EventType;
     category?: TicketCategory;
     seat?: string;

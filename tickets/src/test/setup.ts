@@ -8,7 +8,7 @@ declare global {
 
 let mongo: MongoMemoryServer;
 
-jest.mock("../nats-client.ts");
+jest.mock("../nats-client");
 
 beforeAll(async () => {
   process.env.JWT_KEY = "testing_jwt_key";

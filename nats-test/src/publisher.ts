@@ -9,21 +9,25 @@ const start = async (): Promise<void> => {
     pingInterval: 5_000,
     maxPingOut: 2,
   });
+  try {
+    console.log("Publisher connected to NATS");
 
-  console.log("Publisher connected to NATS");
+    const jsm = await nc.jetstreamManager();
+    const setupService = new JetStreamSetupService(jsm);
 
-  const jsm = await nc.jetstreamManager();
-  const setupService = new JetStreamSetupService(jsm);
+    await setupService.ensureStream();
 
-  await setupService.ensureStream();
-
-  await new TicketCreatedPublisher(nc).publish({
-    id: "123",
-    title: "concert",
-    price: 20,
-  });
-
-  await nc.drain();
+    await new TicketCreatedPublisher(nc).publish({
+      id: "123",
+      title: "concert",
+      price: 20,
+    });
+  } finally {
+    await nc.drain();
+  }
 };
 
-void start();
+void start().catch((err) => {
+  console.error("Publisher startup failed:", err);
+  process.exit(1);
+});

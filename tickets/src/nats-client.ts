@@ -2,7 +2,7 @@ import { JetStreamSetupService } from "@venuepass/common";
 import { connect, type NatsConnection } from "nats";
 
 class NatsClient {
-  private _client?: NatsConnection;
+  private _client?: NatsConnection | undefined;
 
   get client(): NatsConnection {
     if (!this._client) {
@@ -13,20 +13,27 @@ class NatsClient {
   }
 
   async connect(): Promise<void> {
-    this._client = await connect({
+    const client = await connect({
       servers: [process.env.NATS_URL!], // use nats://nats-srv:4222 inside k8s
       name: "tickets-service",
       pingInterval: 5_000,
       maxPingOut: 2,
     });
 
+    this._client = client;
+
     console.log("Connected to NATS");
 
-    const jsm = await this._client.jetstreamManager();
-    const setupService = new JetStreamSetupService(jsm);
+    try {
+      const jsm = await this._client.jetstreamManager();
+      const setupService = new JetStreamSetupService(jsm);
 
-    await setupService.ensureStream();
-
+      await setupService.ensureStream();
+    } catch (err) {
+      await client.drain().catch(() => undefined);
+      this._client = undefined;
+      throw err;
+    }
     this._client.closed().then((err) => {
       if (err) {
         console.error("NATS connection closed with error:", err);

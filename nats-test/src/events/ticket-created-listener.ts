@@ -4,10 +4,11 @@ import { SUBJECTS, type TicketCreatedEvent } from "./events";
 
 export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
   readonly subject = SUBJECTS.TicketCreated;
-  readonly durableName = "orders-service";
+  readonly durableName: string;
 
-  constructor(client: NatsConnection) {
+  constructor(client: NatsConnection, durableName = "orders-service") {
     super(client);
+    this.durableName = durableName;
   }
 
   protected async onMessage(

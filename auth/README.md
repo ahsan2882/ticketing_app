@@ -37,7 +37,7 @@ Uses MongoDB for persistent storage with password hashing for security.
 1. Clone the repository and navigate to the `auth/` directory:
 
    ```bash
-   cd /mnt/drive1/llm-projects/ticketing_app/auth
+   cd auth
    ```
 
 2. Install dependencies:
@@ -58,11 +58,11 @@ Uses MongoDB for persistent storage with password hashing for security.
 
 ### Environment Variables
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `NODE_ENV` | Yes | Node environment mode | `development`, `test`, `production` |
-| `JWT_KEY` | Yes | Secret for JWT token signing | 32+ character random string |
-| `AUTH_MONGO_URI` | Yes | MongoDB connection string | `mongodb://auth-mongo-srv:27017/auth` |
+| Variable         | Required | Description                  | Example                               |
+| ---------------- | -------- | ---------------------------- | ------------------------------------- |
+| `NODE_ENV`       | Yes      | Node environment mode        | `development`, `test`, `production`   |
+| `JWT_KEY`        | Yes      | Secret for JWT token signing | 32+ character random string           |
+| `AUTH_MONGO_URI` | Yes      | MongoDB connection string    | `mongodb://auth-mongo-srv:27017/auth` |
 
 ### Cookie Settings
 
@@ -88,11 +88,11 @@ Register a new user account.
 
 **Validation Rules:**
 
-| Field | Type | Constraints | Error Message |
-|-------|------|-------------|---------------|
-| `email` | string | Valid email format (regex) | "Please provide a valid email" |
-| `password` | string | 4-20 characters minimum length | "Password must be between 4 and 20 characters" |
-| `name` | string | Format: `"FirstName LastName"` (each part ≥2 letters) | "Name must be a full name in format: 'firstName lastName', each at least 2 characters" |
+| Field      | Type   | Constraints                                           | Error Message                                                                          |
+| ---------- | ------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `email`    | string | Valid email format (regex)                            | "Please provide a valid email"                                                         |
+| `password` | string | 4-20 characters minimum length                        | "Password must be between 4 and 20 characters"                                         |
+| `name`     | string | Format: `"FirstName LastName"` (each part ≥2 letters) | "Name must be a full name in format: 'firstName lastName', each at least 2 characters" |
 
 **Response on Success:** `201 Created`
 
@@ -121,10 +121,10 @@ Authenticate an existing user and create a session.
 
 **Validation Rules:**
 
-| Field | Type | Constraints | Error Message |
-|-------|------|-------------|---------------|
-| `email` | string | Valid email format | "Please provide a valid email" |
-| `password` | string | Required (not empty) | "Password is required" |
+| Field      | Type   | Constraints          | Error Message                  |
+| ---------- | ------ | -------------------- | ------------------------------ |
+| `email`    | string | Valid email format   | "Please provide a valid email" |
+| `password` | string | Required (not empty) | "Password is required"         |
 
 **Response on Success:** `200 OK`
 
@@ -203,7 +203,7 @@ docker run --rm -p 3000:3000 \
 
 The service is configured for Skaffold-based local development and deployment. See [`../../skaffold.yaml`](../../skaffold.yaml) for build configuration.
 
-Build artifacts sync source files from `src/**/*.ts` manually.
+Skaffold watches `src/**/*.ts` and automatically syncs changes to the deployed container (no rebuild required).
 
 ### Kubernetes
 
@@ -215,10 +215,10 @@ Kubernetes manifests are located in [`../infra/k8s/`](../infra/k8s/):
 
 #### Kubernetes Ports
 
-| Service | Port | Protocol |
-|---------|------|----------|
-| `auth-srv` | 3000 | TCP |
-| `auth-mongo-srv` | 27017 | TCP |
+| Service          | Port  | Protocol |
+| ---------------- | ----- | -------- |
+| `auth-srv`       | 3000  | TCP      |
+| `auth-mongo-srv` | 27017 | TCP      |
 
 #### Secrets
 

@@ -8,7 +8,7 @@ export abstract class Listener<TEvent extends Event<any>> {
 
   protected readonly ackWaitMs = 5_000;
 
-  private readonly jsonCodec = JSONCodec<TEvent>();
+  private readonly jsonCodec = JSONCodec<TEvent["data"]>();
 
   protected constructor(private readonly client: NatsConnection) {}
 
@@ -39,9 +39,8 @@ export abstract class Listener<TEvent extends Event<any>> {
         `Message received: ${this.subject} / durable ${this.durableName}`,
       );
 
-      const parsedData = this.parseMessage(msg);
-
       try {
+        const parsedData = this.parseMessage(msg);
         await this.onMessage(parsedData, msg);
         msg.ack();
       } catch (err) {
@@ -52,7 +51,8 @@ export abstract class Listener<TEvent extends Event<any>> {
 
   protected abstract onMessage(data: TEvent["data"], msg: JsMsg): Promise<void>;
 
-  private parseMessage(msg: JsMsg): TEvent {
-    return this.jsonCodec.decode(msg.data);
+  private parseMessage(msg: JsMsg): TEvent["data"] {
+    const event = this.jsonCodec.decode(msg.data);
+    return event.data;
   }
 }
