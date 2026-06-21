@@ -1,4 +1,4 @@
-import { NotFoundError } from "@venuepass/common";
+import { NotFoundError, TicketStatus } from "@venuepass/common";
 import express, { type Request, type Response } from "express";
 import { Ticket } from "../models/ticket.model";
 
@@ -11,7 +11,7 @@ const PRIVATE_FIELDS = `${PUBLIC_FIELDS} userId seat`;
 router.get("/api/tickets", async (req: Request, res: Response) => {
   const fields = req.currentUser ? PRIVATE_FIELDS : PUBLIC_FIELDS;
   const tickets = await Ticket.find(
-    !!req.currentUser ? {} : { status: "available" },
+    !!req.currentUser ? {} : { status: TicketStatus.AVAILABLE },
   ).select(fields);
   if (!tickets) {
     throw new NotFoundError();

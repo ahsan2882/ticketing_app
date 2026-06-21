@@ -1,7 +1,7 @@
 import { NotFoundError } from "@venuepass/common";
 import express, { type Request, type Response } from "express";
-import { Ticket, type TicketDoc } from "../models/ticket.model";
 import mongoose from "mongoose";
+import { Ticket } from "../models/ticket.model";
 
 const router = express.Router();
 

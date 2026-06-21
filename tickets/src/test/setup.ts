@@ -1,12 +1,14 @@
+import jwt from "jsonwebtoken";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 
 declare global {
   var signin: (userId?: string) => Promise<string[]>;
 }
 
 let mongo: MongoMemoryServer;
+
+jest.mock("../nats-client");
 
 beforeAll(async () => {
   process.env.JWT_KEY = "testing_jwt_key";

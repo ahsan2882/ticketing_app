@@ -1,13 +1,18 @@
 import {
+  EventType,
   NotFoundError,
   requireAuth,
+  TicketCategory,
+  TicketStatus,
   UnauthorizedError,
   validateRequest,
 } from "@venuepass/common";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
-import { Ticket, type TicketDoc } from "../models/ticket.model";
 import mongoose from "mongoose";
+import { TicketUpdatedPublisher } from "../events/publishers/ticket-updated-publisher";
+import { Ticket, type TicketDoc } from "../models/ticket.model";
+import { natsClient } from "../nats-client";
 
 const router = express.Router();
 
@@ -55,18 +60,11 @@ router.patch(
       .withMessage("Event date must be a valid date"),
     body("eventType")
       .optional()
-      .isIn([
-        "concert",
-        "sports",
-        "theatre",
-        "comedy",
-        "festival",
-        "conference",
-      ])
+      .isIn(Object.values(EventType))
       .withMessage("Invalid event type"),
     body("category")
       .optional()
-      .isIn(["GA", "VIP", "floor", "balcony", "box"])
+      .isIn(Object.values(TicketCategory))
       .withMessage("Invalid ticket category"),
     body("seat")
       .optional()
@@ -92,7 +90,7 @@ router.patch(
       .withMessage("Image URL must be a valid URL"),
     body("status")
       .optional()
-      .isIn(["available", "sold", "reserved", "cancelled"])
+      .isIn(Object.values(TicketStatus))
       .withMessage("Invalid status"),
   ],
   validateRequest,
@@ -141,6 +139,25 @@ router.patch(
       ...(status !== undefined && { status }),
     });
     await ticket.save();
+    await new TicketUpdatedPublisher(natsClient.client).publish({
+      id: ticket.id,
+      userId: ticket.userId,
+      ...(title !== undefined && { title: ticket.title }),
+      ...(price !== undefined && { price: ticket.price }),
+      ...(artist !== undefined && { artist: ticket.artist }),
+      ...(venue !== undefined && { venue: ticket.venue }),
+      ...(city !== undefined && { city: ticket.city }),
+      ...(eventDate !== undefined && {
+        eventDate: ticket.eventDate.toISOString(),
+      }),
+      ...(eventType !== undefined && { eventType: ticket.eventType }),
+      ...(category !== undefined && { category: ticket.category }),
+      ...(seat !== undefined && { seat: ticket.seat }),
+      ...(quantity !== undefined && { quantity: ticket.quantity }),
+      ...(description !== undefined && { description: ticket.description }),
+      ...(imageUrl !== undefined && { imageUrl: ticket.imageUrl }),
+      ...(status !== undefined && { status: ticket.status }),
+    });
     res.status(200).send(ticket);
   },
 );

@@ -1,7 +1,8 @@
+import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
+import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";
 import { Ticket } from "../../models/ticket.model";
-import mongoose from "mongoose";
 
 const createTicket = async (
   overrides: Partial<Parameters<typeof Ticket.build>[0]> = {},
@@ -14,11 +15,11 @@ const createTicket = async (
     venue: "Default Venue",
     city: "Default City",
     eventDate: new Date("2027-01-01"),
-    eventType: "concert",
-    category: "GA",
+    eventType: EventType.Concert,
+    category: TicketCategory.STANDARD,
     seat: "A1",
     quantity: 1,
-    status: "available",
+    status: TicketStatus.AVAILABLE,
     ...overrides,
   });
   await ticket.save();
@@ -48,53 +49,57 @@ describe("find all tickets — basic accessibility", () => {
 
 describe("find all tickets — unauthenticated: only available tickets returned", () => {
   it("returns only 'available' tickets", async () => {
-    await createTicket({ status: "available" });
-    await createTicket({ status: "sold" });
-    await createTicket({ status: "reserved" });
-    await createTicket({ status: "cancelled" });
+    await createTicket({ status: TicketStatus.AVAILABLE });
+    await createTicket({ status: TicketStatus.SOLD });
+    await createTicket({ status: TicketStatus.RESERVED });
+    await createTicket({ status: TicketStatus.CANCELLED });
 
     const { body } = await request(app).get("/api/tickets").expect(200);
 
     expect(body).toHaveLength(1);
-    expect(body[0].status).toBe("available");
+    expect(body[0].status).toBe(TicketStatus.AVAILABLE);
   });
 
   it("returns an empty array when no tickets are available", async () => {
-    await createTicket({ status: "sold" });
-    await createTicket({ status: "cancelled" });
+    await createTicket({ status: TicketStatus.SOLD });
+    await createTicket({ status: TicketStatus.CANCELLED });
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body).toHaveLength(0);
   });
 
   it("returns all available tickets when multiple exist", async () => {
-    await createTicket({ status: "available", title: "Show A" });
-    await createTicket({ status: "available", title: "Show B" });
-    await createTicket({ status: "sold" });
+    await createTicket({ status: TicketStatus.AVAILABLE, title: "Show A" });
+    await createTicket({ status: TicketStatus.AVAILABLE, title: "Show B" });
+    await createTicket({ status: TicketStatus.SOLD });
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body).toHaveLength(2);
-    body.forEach((t: any) => expect(t.status).toBe("available"));
+    body.forEach((t: any) => expect(t.status).toBe(TicketStatus.AVAILABLE));
   });
 
   it("does not return 'sold' tickets", async () => {
-    await createTicket({ status: "sold" });
+    await createTicket({ status: TicketStatus.SOLD });
     const { body } = await request(app).get("/api/tickets").expect(200);
-    const soldTickets = body.filter((t: any) => t.status === "sold");
+    const soldTickets = body.filter((t: any) => t.status === TicketStatus.SOLD);
     expect(soldTickets).toHaveLength(0);
   });
 
   it("does not return 'reserved' tickets", async () => {
-    await createTicket({ status: "reserved" });
+    await createTicket({ status: TicketStatus.RESERVED });
     const { body } = await request(app).get("/api/tickets").expect(200);
-    const reserved = body.filter((t: any) => t.status === "reserved");
+    const reserved = body.filter(
+      (t: any) => t.status === TicketStatus.RESERVED,
+    );
     expect(reserved).toHaveLength(0);
   });
 
   it("does not return 'cancelled' tickets", async () => {
-    await createTicket({ status: "cancelled" });
+    await createTicket({ status: TicketStatus.CANCELLED });
     const { body } = await request(app).get("/api/tickets").expect(200);
-    const cancelled = body.filter((t: any) => t.status === "cancelled");
+    const cancelled = body.filter(
+      (t: any) => t.status === TicketStatus.CANCELLED,
+    );
     expect(cancelled).toHaveLength(0);
   });
 });
@@ -106,10 +111,10 @@ describe("find all tickets — authenticated: all tickets returned regardless of
   });
 
   it("returns tickets of every status", async () => {
-    await createTicket({ status: "available" });
-    await createTicket({ status: "sold" });
-    await createTicket({ status: "reserved" });
-    await createTicket({ status: "cancelled" });
+    await createTicket({ status: TicketStatus.AVAILABLE });
+    await createTicket({ status: TicketStatus.SOLD });
+    await createTicket({ status: TicketStatus.RESERVED });
+    await createTicket({ status: TicketStatus.CANCELLED });
 
     const { body } = await request(app)
       .get("/api/tickets")
@@ -118,10 +123,10 @@ describe("find all tickets — authenticated: all tickets returned regardless of
 
     expect(body).toHaveLength(4);
     const statuses = body.map((t: any) => t.status);
-    expect(statuses).toContain("available");
-    expect(statuses).toContain("sold");
-    expect(statuses).toContain("reserved");
-    expect(statuses).toContain("cancelled");
+    expect(statuses).toContain(TicketStatus.AVAILABLE);
+    expect(statuses).toContain(TicketStatus.SOLD);
+    expect(statuses).toContain(TicketStatus.RESERVED);
+    expect(statuses).toContain(TicketStatus.CANCELLED);
   });
 
   it("returns an empty array when there are no tickets at all", async () => {
@@ -136,7 +141,7 @@ describe("find all tickets — authenticated: all tickets returned regardless of
 describe("find all tickets — unauthenticated: public fields only", () => {
   it("returns all expected public fields", async () => {
     await createTicket({
-      status: "available",
+      status: TicketStatus.AVAILABLE,
       description: "Great show",
       imageUrl: "https://example.com/img.jpg",
       quantity: 3,
@@ -165,21 +170,21 @@ describe("find all tickets — unauthenticated: public fields only", () => {
   });
 
   it("does NOT expose 'seat' to unauthenticated users", async () => {
-    await createTicket({ status: "available", seat: "Z99" });
+    await createTicket({ status: TicketStatus.AVAILABLE, seat: "Z99" });
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body[0]).not.toHaveProperty("seat");
   });
 
   it("does NOT expose 'userId' to unauthenticated users", async () => {
-    await createTicket({ status: "available" });
+    await createTicket({ status: TicketStatus.AVAILABLE });
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body[0]).not.toHaveProperty("userId");
   });
 
   it("does not expose internal MongoDB '_id' (only transformed 'id')", async () => {
-    await createTicket({ status: "available" });
+    await createTicket({ status: TicketStatus.AVAILABLE });
     const { body } = await request(app).get("/api/tickets").expect(200);
     // toJSON transform maps _id -> id
     expect(body[0]).toHaveProperty("id");
@@ -271,13 +276,13 @@ describe("find all tickets — data integrity", () => {
       venue: "Blue Note",
       city: "Chicago",
       eventDate: new Date("2027-08-20T19:00:00.000Z"),
-      eventType: "concert" as const,
-      category: "VIP" as const,
+      eventType: EventType.Concert,
+      category: TicketCategory.VIP,
       seat: "B5",
       quantity: 2,
       description: "A smooth evening of jazz",
       imageUrl: "https://example.com/jazz.jpg",
-      status: "available" as const,
+      status: TicketStatus.AVAILABLE,
     };
     await createTicket(attrs);
 
@@ -333,14 +338,7 @@ describe("find all tickets — data integrity", () => {
   });
 
   it("returns tickets across all valid eventType enum values", async () => {
-    const eventTypes = [
-      "concert",
-      "sports",
-      "theatre",
-      "comedy",
-      "festival",
-      "conference",
-    ] as const;
+    const eventTypes = Object.values(EventType);
     for (const eventType of eventTypes) {
       await createTicket({ eventType });
     }
@@ -355,7 +353,7 @@ describe("find all tickets — data integrity", () => {
   });
 
   it("returns tickets across all valid category enum values", async () => {
-    const categories = ["GA", "VIP", "floor", "balcony", "box"] as const;
+    const categories = Object.values(TicketCategory);
     for (const category of categories) {
       await createTicket({ category });
     }
@@ -378,8 +376,8 @@ describe("find all tickets — data integrity", () => {
       venue: "Y",
       city: "Z",
       eventDate: new Date("2027-03-01"),
-      eventType: "sports",
-      category: "GA",
+      eventType: EventType.Sports,
+      category: TicketCategory.STANDARD,
       seat: "C3",
     });
     await ticket.save();
@@ -390,7 +388,7 @@ describe("find all tickets — data integrity", () => {
       .expect(200);
 
     const saved = body.find((t: any) => t.title === "Implicit Available");
-    expect(saved?.status).toBe("available");
+    expect(saved?.status).toBe(TicketStatus.AVAILABLE);
   });
 
   it("returns the default quantity of 1 when no quantity was provided", async () => {
@@ -402,8 +400,8 @@ describe("find all tickets — data integrity", () => {
       venue: "B",
       city: "C",
       eventDate: new Date("2027-04-01"),
-      eventType: "comedy",
-      category: "box",
+      eventType: EventType.Comedy,
+      category: TicketCategory.BOX,
       seat: "D4",
     });
     await ticket.save();
@@ -420,9 +418,9 @@ describe("find all tickets — data integrity", () => {
 
 describe("find all tickets — auth state comparison", () => {
   it("unauthenticated gets fewer tickets than authenticated when non-available tickets exist", async () => {
-    await createTicket({ status: "available" });
-    await createTicket({ status: "sold" });
-    await createTicket({ status: "reserved" });
+    await createTicket({ status: TicketStatus.AVAILABLE });
+    await createTicket({ status: TicketStatus.SOLD });
+    await createTicket({ status: TicketStatus.RESERVED });
 
     const cookie = await global.signin();
 
@@ -438,8 +436,8 @@ describe("find all tickets — auth state comparison", () => {
   });
 
   it("both auth states see the same count when all tickets are available", async () => {
-    await createTicket({ title: "Tic1", status: "available" });
-    await createTicket({ title: "Tic2", status: "available" });
+    await createTicket({ title: "Tic1", status: TicketStatus.AVAILABLE });
+    await createTicket({ title: "Tic2", status: TicketStatus.AVAILABLE });
 
     const cookie = await global.signin();
 
@@ -454,7 +452,7 @@ describe("find all tickets — auth state comparison", () => {
   });
 
   it("authenticated response contains 'seat' that unauthenticated response withholds", async () => {
-    await createTicket({ seat: "SECRET-SEAT", status: "available" });
+    await createTicket({ seat: "SECRET-SEAT", status: TicketStatus.AVAILABLE });
 
     const cookie = await global.signin();
 
@@ -470,7 +468,7 @@ describe("find all tickets — auth state comparison", () => {
 
   it("authenticated response contains 'userId' that unauthenticated response withholds", async () => {
     const userId = new (require("mongoose").Types.ObjectId)().toHexString();
-    await createTicket({ userId, status: "available" });
+    await createTicket({ userId, status: TicketStatus.AVAILABLE });
 
     const cookie = await global.signin();
 
@@ -513,10 +511,10 @@ describe("GET /api/tickets — scale", () => {
         venue: `Venue ${i}`,
         city: `City ${i}`,
         eventDate: new Date("2028-01-01"),
-        eventType: "festival",
-        category: "GA",
+        eventType: EventType.Festival,
+        category: TicketCategory.STANDARD,
         seat: `S${i}`,
-        status: i % 2 === 0 ? "available" : "sold",
+        status: i % 2 === 0 ? TicketStatus.AVAILABLE : TicketStatus.SOLD,
       }),
     );
     await Promise.all(tickets.map((t) => t.save()));
@@ -533,6 +531,6 @@ describe("GET /api/tickets — scale", () => {
   it("unauthenticated — returns only the 25 available tickets", async () => {
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body).toHaveLength(25);
-    body.forEach((t: any) => expect(t.status).toBe("available"));
+    body.forEach((t: any) => expect(t.status).toBe(TicketStatus.AVAILABLE));
   });
 });
