@@ -66,7 +66,7 @@ Uses MongoDB for persistent storage with password hashing for security.
 
 ### Cookie Settings
 
-- **Secure cookies**: Enabled in production (`NODE_ENV !== development/test`)
+- **Secure cookies**: Enabled when `NODE_ENV === "production"`
 - **Session expiration**: 1 hour (`maxAge: 3600000` ms)
 - **Proxy trust**: Enabled for remote deployments (`trust proxy: true`)
 

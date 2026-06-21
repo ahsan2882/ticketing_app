@@ -8,7 +8,7 @@ export abstract class Listener<TEvent extends Event<any>> {
 
   protected readonly ackWaitMs = 5_000;
 
-  private readonly jsonCodec = JSONCodec<TEvent["data"]>();
+  private readonly jsonCodec = JSONCodec<Event<TEvent["data"]>>();
 
   protected constructor(private readonly client: NatsConnection) {}
 
@@ -53,6 +53,9 @@ export abstract class Listener<TEvent extends Event<any>> {
 
   private parseMessage(msg: JsMsg): TEvent["data"] {
     const event = this.jsonCodec.decode(msg.data);
+    if (!event || event.subject !== this.subject || event.data === undefined) {
+      throw new Error("Invalid event envelope");
+    }
     return event.data;
   }
 }
