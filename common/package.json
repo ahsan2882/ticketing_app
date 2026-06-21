@@ -1,6 +1,6 @@
 {
   "name": "@venuepass/common",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "description": "Shared common package for VenuePass application",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -10,8 +10,12 @@
   "scripts": {
     "build": "yarn clean && tsc",
     "clean": "del ./build/*",
-    "sync-readme-version": "node scripts/sync-readme-version.js && git add README.md",
-    "prepublishOnly": "yarn sync-readme-version && yarn build"
+    "sync-readme-version": "node scripts/sync-readme-version.js",
+    "version": "yarn sync-readme-version && git add README.md",
+    "prepublishOnly": "yarn build",
+    "release:patch": "yarn version --patch && yarn publish",
+    "release:minor": "yarn version --minor && yarn publish",
+    "release:major": "yarn version --major && yarn publish"
   },
   "keywords": [],
   "author": "ahsan2882",
