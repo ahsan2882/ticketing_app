@@ -1,6 +1,6 @@
 {
   "name": "@venuepass/common",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "description": "Shared common package for VenuePass application",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
