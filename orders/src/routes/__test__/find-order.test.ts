@@ -164,9 +164,7 @@ describe("find order - authorization / ownership", () => {
 
     const response = await request(app)
       .get(`/api/orders/${order.id}`)
-      .set("Cookie", [
-        "session=eyJpZCI6IiIsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsIm5hbWUiOiJUZXN0IFRlc3QifQ",
-      ])
+      .set("Cookie", await global.signin(undefined))
       .send();
 
     expect(response.status).toBe(401);

@@ -1,9 +1,9 @@
 import {
+  BadRequestError,
   EventType,
   NotFoundError,
   requireAuth,
   TicketCategory,
-  TicketStatus,
   UnauthorizedError,
   validateRequest,
 } from "@venuepass/common";
@@ -75,7 +75,7 @@ router.patch(
       .withMessage("Seat must be a string"),
     body("quantity")
       .optional()
-      .isInt({ min: 1 })
+      .isInt({ min: 0 })
       .withMessage("Quantity must be a positive integer"),
     body("description")
       .optional()
@@ -88,10 +88,6 @@ router.patch(
       .optional()
       .isURL()
       .withMessage("Image URL must be a valid URL"),
-    body("status")
-      .optional()
-      .isIn(Object.values(TicketStatus))
-      .withMessage("Invalid status"),
   ],
   validateRequest,
   async (req: Request, res: Response) => {
@@ -121,8 +117,23 @@ router.patch(
       quantity,
       description,
       imageUrl,
-      status,
     } = req.body;
+    if (
+      title === undefined &&
+      price === undefined &&
+      artist === undefined &&
+      venue === undefined &&
+      city === undefined &&
+      eventDate === undefined &&
+      eventType === undefined &&
+      category === undefined &&
+      seat === undefined &&
+      quantity === undefined &&
+      description === undefined &&
+      imageUrl === undefined
+    ) {
+      throw new BadRequestError("At least one field must be provided");
+    }
     ticket.set({
       ...(title !== undefined && { title }),
       ...(price !== undefined && { price }),
@@ -136,7 +147,6 @@ router.patch(
       ...(quantity !== undefined && { quantity }),
       ...(description !== undefined && { description }),
       ...(imageUrl !== undefined && { imageUrl }),
-      ...(status !== undefined && { status }),
     });
     await ticket.save();
     await new TicketUpdatedPublisher(natsClient.client).publish({

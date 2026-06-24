@@ -15,7 +15,7 @@ class NatsClient {
   async connect(): Promise<void> {
     this._client = await connect({
       servers: [process.env.NATS_URL!], // use nats://nats-srv:4222 inside k8s
-      name: "tickets-service",
+      name: "order-service",
       pingInterval: 5_000,
       maxPingOut: 2,
     });

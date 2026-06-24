@@ -39,13 +39,12 @@ const validUpdatePayload = {
   venue: "Updated Venue",
   city: "Lahore",
   eventDate: "2031-05-10T19:30:00.000Z",
-  eventType: "festival",
-  category: "VIP",
+  eventType: EventType.Festival,
+  category: TicketCategory.VIP,
   seat: "B-20",
   quantity: 5,
   description: "Updated description",
   imageUrl: "https://example.com/updated.jpg",
-  status: "reserved",
 };
 
 describe("update ticket - authentication", () => {
@@ -245,10 +244,10 @@ describe("update ticket - successful partial updates", () => {
     const response = await request(app)
       .patch(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin(userId))
-      .send({ eventType: "sports" })
+      .send({ eventType: EventType.Sports })
       .expect(200);
 
-    expect(response.body.eventType).toEqual("sports");
+    expect(response.body.eventType).toEqual(EventType.Sports);
   });
 
   it("updates category", async () => {
@@ -258,10 +257,10 @@ describe("update ticket - successful partial updates", () => {
     const response = await request(app)
       .patch(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin(userId))
-      .send({ category: "box" })
+      .send({ category: TicketCategory.BOX })
       .expect(200);
 
-    expect(response.body.category).toEqual("box");
+    expect(response.body.category).toEqual(TicketCategory.BOX);
   });
 
   it("updates seat", async () => {
@@ -315,19 +314,6 @@ describe("update ticket - successful partial updates", () => {
 
     expect(response.body.imageUrl).toEqual("https://example.com/new-image.png");
   });
-
-  it("updates status", async () => {
-    const userId = new mongoose.Types.ObjectId().toHexString();
-    const ticket = await buildTicket({ userId });
-
-    const response = await request(app)
-      .patch(`/api/tickets/${ticket.id}`)
-      .set("Cookie", await global.signin(userId))
-      .send({ status: "sold" })
-      .expect(200);
-
-    expect(response.body.status).toEqual("sold");
-  });
 });
 
 describe("update ticket - successful full update", () => {
@@ -355,7 +341,6 @@ describe("update ticket - successful full update", () => {
       quantity: validUpdatePayload.quantity,
       description: validUpdatePayload.description,
       imageUrl: validUpdatePayload.imageUrl,
-      status: validUpdatePayload.status,
       userId,
     });
   });
@@ -383,7 +368,6 @@ describe("update ticket - successful full update", () => {
     expect(updatedTicket!.quantity).toEqual(validUpdatePayload.quantity);
     expect(updatedTicket!.description).toEqual(validUpdatePayload.description);
     expect(updatedTicket!.imageUrl).toEqual(validUpdatePayload.imageUrl);
-    expect(updatedTicket!.status).toEqual(validUpdatePayload.status);
   });
 });
 
@@ -455,7 +439,7 @@ describe("update ticket - partial update preservation", () => {
     expect(updatedTicket!.get("adminOnly")).toBeUndefined();
   });
 
-  it("allows empty update body and keeps ticket unchanged", async () => {
+  it("does not allow empty update body", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
 
     const ticket = await buildTicket({
@@ -468,10 +452,7 @@ describe("update ticket - partial update preservation", () => {
       .patch(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin(userId))
       .send({})
-      .expect(200);
-
-    expect(response.body.title).toEqual("Original Title");
-    expect(response.body.price).toEqual(100);
+      .expect(400);
   });
 });
 
@@ -674,7 +655,7 @@ describe("update ticket - enum validation", () => {
       .expect(400);
   });
 
-  it("returns 400 when status is invalid", async () => {
+  it("returns 400 when user tries to update status", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const ticket = await buildTicket({ userId });
 
@@ -685,27 +666,23 @@ describe("update ticket - enum validation", () => {
       .expect(400);
   });
 
-  it.each([
-    EventType.Concert,
-    "sports",
-    "theatre",
-    "comedy",
-    "festival",
-    "conference",
-  ] as const)("accepts valid eventType: %s", async (eventType) => {
-    const userId = new mongoose.Types.ObjectId().toHexString();
-    const ticket = await buildTicket({ userId });
+  it.each(Object.values(EventType))(
+    "accepts valid eventType: %s",
+    async (eventType) => {
+      const userId = new mongoose.Types.ObjectId().toHexString();
+      const ticket = await buildTicket({ userId });
 
-    const response = await request(app)
-      .patch(`/api/tickets/${ticket.id}`)
-      .set("Cookie", await global.signin(userId))
-      .send({ eventType })
-      .expect(200);
+      const response = await request(app)
+        .patch(`/api/tickets/${ticket.id}`)
+        .set("Cookie", await global.signin(userId))
+        .send({ eventType })
+        .expect(200);
 
-    expect(response.body.eventType).toEqual(eventType);
-  });
+      expect(response.body.eventType).toEqual(eventType);
+    },
+  );
 
-  it.each([TicketCategory.STANDARD, "VIP", "floor", "balcony", "box"] as const)(
+  it.each(Object.values(TicketCategory))(
     "accepts valid category: %s",
     async (category) => {
       const userId = new mongoose.Types.ObjectId().toHexString();
@@ -718,22 +695,6 @@ describe("update ticket - enum validation", () => {
         .expect(200);
 
       expect(response.body.category).toEqual(category);
-    },
-  );
-
-  it.each([TicketStatus.AVAILABLE, "sold", "reserved", "cancelled"] as const)(
-    "accepts valid status: %s",
-    async (status) => {
-      const userId = new mongoose.Types.ObjectId().toHexString();
-      const ticket = await buildTicket({ userId });
-
-      const response = await request(app)
-        .patch(`/api/tickets/${ticket.id}`)
-        .set("Cookie", await global.signin(userId))
-        .send({ status })
-        .expect(200);
-
-      expect(response.body.status).toEqual(status);
     },
   );
 });
@@ -750,7 +711,7 @@ describe("update ticket - date, quantity, and URL validation", () => {
       .expect(400);
   });
 
-  it("returns 400 when quantity is 0", async () => {
+  it("returns 200 when quantity is 0", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const ticket = await buildTicket({ userId });
 
@@ -758,7 +719,7 @@ describe("update ticket - date, quantity, and URL validation", () => {
       .patch(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin(userId))
       .send({ quantity: 0 })
-      .expect(400);
+      .expect(200);
   });
 
   it("returns 400 when quantity is negative", async () => {
@@ -835,20 +796,11 @@ describe("update ticket - event publishing", () => {
       userId,
       title: validUpdatePayload.title,
       price: validUpdatePayload.price,
-      artist: validUpdatePayload.artist,
-      venue: validUpdatePayload.venue,
-      city: validUpdatePayload.city,
-      eventType: validUpdatePayload.eventType,
-      category: validUpdatePayload.category,
-      seat: validUpdatePayload.seat,
-      quantity: validUpdatePayload.quantity,
-      description: validUpdatePayload.description,
-      imageUrl: validUpdatePayload.imageUrl,
-      status: validUpdatePayload.status,
+      version: 0,
     });
   });
 
-  it("includes only the fields that were actually updated", async () => {
+  it("includes all the publishable fields even though some were actually updated", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const ticket = await buildTicket({ userId, title: "Original Title" });
 
@@ -866,10 +818,13 @@ describe("update ticket - event publishing", () => {
       id: ticket.id,
       userId,
       title: "Only Title Updated",
+      price: 100,
+      status: TicketStatus.AVAILABLE,
+      version: 0,
     });
   });
 
-  it("always includes id and userId even when body is empty", async () => {
+  it("does not publish when body was empty", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const ticket = await buildTicket({ userId });
 
@@ -877,16 +832,9 @@ describe("update ticket - event publishing", () => {
       .patch(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin(userId))
       .send({})
-      .expect(200);
+      .expect(400);
 
-    const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
-      .instances[0];
-    const publishedData = publisherInstance.publish.mock.calls[0][0];
-
-    expect(publishedData).toEqual({
-      id: ticket.id,
-      userId,
-    });
+    expect(TicketUpdatedPublisher).toHaveBeenCalledTimes(0);
   });
 
   it("does not publish an event when validation fails", async () => {

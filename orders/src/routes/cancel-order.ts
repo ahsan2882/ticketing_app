@@ -40,7 +40,8 @@ router.delete(
     });
     // return the order that was just cancelled to the user so they can see it in their orders list
     // we don't want to send back the ticket details because they shouldn't be able to see them after cancelling an order
-    res.status(200).send(order);
+    const { ticket, ...strippedOrder } = order;
+    res.status(200).send(strippedOrder);
   },
 );
 export { router as cancelOrderRouter };

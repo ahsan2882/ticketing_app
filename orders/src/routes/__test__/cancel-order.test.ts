@@ -223,7 +223,7 @@ describe("cancel order - successful cancellation", () => {
     expect(updated!.status).toEqual(OrderStatus.CANCELLED);
   });
 
-  it("is idempotent-ish: cancelling an already-cancelled order still returns 204 and stays cancelled", async () => {
+  it("is idempotent-ish: cancelling an already-cancelled order still returns 200 and stays cancelled", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const cookie = await global.signin(userId);
     const ticket = await createTicket();
@@ -241,7 +241,7 @@ describe("cancel order - successful cancellation", () => {
     expect(updated!.status).toEqual(OrderStatus.CANCELLED);
   });
 
-  it("calls OrderCancelledPublisher.publish exactly once", async () => {
+  it("calls OrderCancelledPublisher exactly once", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const cookie = await global.signin(userId);
     const ticket = await createTicket();

@@ -43,6 +43,7 @@ describe("create order - request validation", () => {
   beforeEach(async () => {
     cookie = await global.signin();
     (OrderCreatedPublisher as jest.Mock).mockClear();
+    (OrderCreatedPublisher.prototype.publish as jest.Mock).mockClear();
   });
   it("returns 400 if ticketId is missing", async () => {
     await request(app)
@@ -110,6 +111,7 @@ describe("create order - ticket existence", () => {
   beforeEach(async () => {
     cookie = await global.signin();
     (OrderCreatedPublisher as jest.Mock).mockClear();
+    (OrderCreatedPublisher.prototype.publish as jest.Mock).mockClear();
   });
   it("returns 404 if the ticket does not exist", async () => {
     const ticketId = new mongoose.Types.ObjectId().toHexString();
@@ -152,6 +154,7 @@ describe("create order - ticket reservation check", () => {
   beforeEach(async () => {
     cookie = await global.signin();
     (OrderCreatedPublisher as jest.Mock).mockClear();
+    (OrderCreatedPublisher.prototype.publish as jest.Mock).mockClear();
   });
   it("returns 400 if the ticket is already reserved by an existing order", async () => {
     const ticket = await createTicket();
@@ -232,6 +235,7 @@ describe("create order - successful order creation", () => {
   beforeEach(async () => {
     cookie = await global.signin();
     (OrderCreatedPublisher as jest.Mock).mockClear();
+    (OrderCreatedPublisher.prototype.publish as jest.Mock).mockClear();
   });
   it("returns 201 with the created order", async () => {
     const ticket = await createTicket();

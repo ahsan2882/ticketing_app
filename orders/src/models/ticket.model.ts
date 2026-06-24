@@ -23,12 +23,13 @@ const ticketSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
+    userId: { type: String, required: true },
   },
   {
     toJSON: {
       transform(doc, ret) {
-        const { _id, title, price } = ret;
-        return { id: _id, title, price };
+        const { _id, title, price, userId } = ret;
+        return { id: _id, title, price, userId };
       },
     },
     versionKey: false,

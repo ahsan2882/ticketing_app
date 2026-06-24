@@ -38,8 +38,8 @@ const connectMongoWithRetry = async (retries = 10) => {
       console.log("Connected to MongoDB");
 
       return;
-    } catch (err) {
-      console.error(`Mongo connection failed (${i + 1}/${retries})`);
+    } catch (error) {
+      console.error(`Mongo connection failed (${i + 1}/${retries})`, error);
       await new Promise((res) => setTimeout(res, 3000));
     }
   }
@@ -54,7 +54,10 @@ const connectNatsClientWithRetry = async (retries = 10) => {
       console.log("Connected to nats client!");
       return;
     } catch (error) {
-      console.error(`Nats client connection failed (${i + 1}/${retries})`);
+      console.error(
+        `Nats client connection failed (${i + 1}/${retries})`,
+        error,
+      );
       await new Promise((res) => setTimeout(res, 3000));
     }
   }
