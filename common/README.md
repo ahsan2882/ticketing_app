@@ -343,7 +343,7 @@ ISC
 
 ---
 
-**Version**: <!-- PACKAGE_VERSION -->1.0.40<!-- /PACKAGE_VERSION -->
+**Version**: <!-- PACKAGE_VERSION -->1.0.41<!-- /PACKAGE_VERSION -->
 
 **Author**: ahsan2882
 
