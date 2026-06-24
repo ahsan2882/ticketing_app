@@ -108,7 +108,7 @@ const ticketSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(TicketStatus),
-      default: "available",
+      default: TicketStatus.AVAILABLE,
     },
   },
   {

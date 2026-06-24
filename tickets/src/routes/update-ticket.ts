@@ -76,7 +76,7 @@ router.patch(
     body("quantity")
       .optional()
       .isInt({ min: 0 })
-      .withMessage("Quantity must be a positive integer"),
+      .withMessage("Quantity must be a non-negative integer"),
     body("description")
       .optional()
       .isString()

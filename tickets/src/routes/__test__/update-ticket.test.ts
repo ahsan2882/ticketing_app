@@ -662,7 +662,7 @@ describe("update ticket - enum validation", () => {
     await request(app)
       .patch(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin(userId))
-      .send({ status: "invalid-status" })
+      .send({ status: TicketStatus.RESERVED })
       .expect(400);
   });
 
@@ -715,11 +715,14 @@ describe("update ticket - date, quantity, and URL validation", () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const ticket = await buildTicket({ userId });
 
-    await request(app)
+    const response = await request(app)
       .patch(`/api/tickets/${ticket.id}`)
       .set("Cookie", await global.signin(userId))
       .send({ quantity: 0 })
       .expect(200);
+    expect(response.body.quantity).toEqual(0);
+    const updatedTicket = await Ticket.findById(ticket.id);
+    expect(updatedTicket!.quantity).toEqual(0);
   });
 
   it("returns 400 when quantity is negative", async () => {
