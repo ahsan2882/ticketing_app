@@ -1,10 +1,10 @@
-import { EventType, TicketCategory } from "@venuepass/common";
+import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import request from "supertest";
 import { app } from "../../app";
-import { TicketCreatedPublisher } from "../../events/publishers/ticket-created.publisher";
+import { TicketCreatedPublisher } from "../../events/publishers/ticket-created-publisher";
 import { Ticket } from "../../models/ticket.model";
 
-jest.mock("../../events/publishers/ticket-created.publisher");
+jest.mock("../../events/publishers/ticket-created-publisher");
 
 const validTicketPayload = () => ({
   title: "Rock Night 2026",
@@ -326,14 +326,7 @@ describe("create tickets — eventType validation", () => {
     cookie = await global.signin();
   });
 
-  const validTypes = [
-    "concert",
-    "sports",
-    "theatre",
-    "comedy",
-    "festival",
-    "conference",
-  ];
+  const validTypes = Object.values(EventType);
   const invalidTypes = ["gig", "opera", "CONCERT", "Concert", "", "random"];
 
   validTypes.forEach((type) => {
@@ -373,7 +366,7 @@ describe("create tickets — category validation", () => {
     cookie = await global.signin();
   });
 
-  const validCategories = ["GA", "VIP", "floor", "balcony", "box"];
+  const validCategories = Object.values(TicketCategory);
   const invalidCategories = ["vip", "ga", "FLOOR", "suite", "", "premium"];
 
   validCategories.forEach((cat) => {
@@ -737,35 +730,9 @@ describe("create tickets — event publishing", () => {
       title: payload.title,
       price: payload.price,
       userId: body.userId,
-      artist: payload.artist,
-      venue: payload.venue,
-      city: payload.city,
-      eventType: payload.eventType,
-      category: payload.category,
-      seat: payload.seat,
-      quantity: payload.quantity,
-      description: payload.description,
-      imageUrl: payload.imageUrl,
+      status: TicketStatus.AVAILABLE,
+      version: 0,
     });
-  });
-
-  it("omits description and imageUrl from the event when not provided, defaults quantity to 1", async () => {
-    const { quantity, description, imageUrl, ...required } =
-      validTicketPayload();
-
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(required)
-      .expect(201);
-
-    const publisherInstance = (TicketCreatedPublisher as jest.Mock).mock
-      .instances[0];
-    const publishedData = publisherInstance.publish.mock.calls[0][0];
-
-    expect(publishedData.quantity).toBe(1);
-    expect(publishedData.description).toBeUndefined();
-    expect(publishedData.imageUrl).toBeUndefined();
   });
 
   it("does not publish an event when validation fails", async () => {

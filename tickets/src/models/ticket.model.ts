@@ -1,8 +1,4 @@
-import type {
-  EventType,
-  TicketCategory,
-  TicketStatus,
-} from "@venuepass/common";
+import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import mongoose from "mongoose";
 
 interface TicketAttrs {
@@ -83,19 +79,12 @@ const ticketSchema = new mongoose.Schema(
     },
     eventType: {
       type: String,
-      enum: [
-        "concert",
-        "sports",
-        "theatre",
-        "comedy",
-        "festival",
-        "conference",
-      ],
+      enum: Object.values(EventType),
       required: true,
     },
     category: {
       type: String,
-      enum: ["standard", "VIP", "floor", "balcony", "box"],
+      enum: Object.values(TicketCategory),
       required: true,
     },
     seat: {
@@ -105,7 +94,7 @@ const ticketSchema = new mongoose.Schema(
     },
     quantity: {
       type: Number,
-      min: 1,
+      min: 0,
       default: 1,
     },
     description: {
@@ -118,8 +107,8 @@ const ticketSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["available", "sold", "reserved", "cancelled"],
-      default: "available",
+      enum: Object.values(TicketStatus),
+      default: TicketStatus.AVAILABLE,
     },
   },
   {

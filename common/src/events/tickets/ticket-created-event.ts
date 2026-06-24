@@ -12,16 +12,7 @@ export interface TicketCreatedEvent {
     title: string;
     price: number;
     userId: string;
-    artist: string;
-    venue: string;
-    city: string;
-    eventDate: string;
-    eventType: EventType;
-    category: TicketCategory;
-    seat: string;
-    quantity?: number;
-    description?: string;
-    imageUrl?: string;
-    status?: TicketStatus;
+    status: TicketStatus;
+    version: number;
   };
 }

@@ -1,9 +1,9 @@
 import {
+  BadRequestError,
   EventType,
   NotFoundError,
   requireAuth,
   TicketCategory,
-  TicketStatus,
   UnauthorizedError,
   validateRequest,
 } from "@venuepass/common";
@@ -75,8 +75,8 @@ router.patch(
       .withMessage("Seat must be a string"),
     body("quantity")
       .optional()
-      .isInt({ min: 1 })
-      .withMessage("Quantity must be a positive integer"),
+      .isInt({ min: 0 })
+      .withMessage("Quantity must be a non-negative integer"),
     body("description")
       .optional()
       .isString()
@@ -88,10 +88,6 @@ router.patch(
       .optional()
       .isURL()
       .withMessage("Image URL must be a valid URL"),
-    body("status")
-      .optional()
-      .isIn(Object.values(TicketStatus))
-      .withMessage("Invalid status"),
   ],
   validateRequest,
   async (req: Request, res: Response) => {
@@ -121,8 +117,23 @@ router.patch(
       quantity,
       description,
       imageUrl,
-      status,
     } = req.body;
+    if (
+      title === undefined &&
+      price === undefined &&
+      artist === undefined &&
+      venue === undefined &&
+      city === undefined &&
+      eventDate === undefined &&
+      eventType === undefined &&
+      category === undefined &&
+      seat === undefined &&
+      quantity === undefined &&
+      description === undefined &&
+      imageUrl === undefined
+    ) {
+      throw new BadRequestError("At least one field must be provided");
+    }
     ticket.set({
       ...(title !== undefined && { title }),
       ...(price !== undefined && { price }),
@@ -136,27 +147,15 @@ router.patch(
       ...(quantity !== undefined && { quantity }),
       ...(description !== undefined && { description }),
       ...(imageUrl !== undefined && { imageUrl }),
-      ...(status !== undefined && { status }),
     });
     await ticket.save();
     await new TicketUpdatedPublisher(natsClient.client).publish({
       id: ticket.id,
       userId: ticket.userId,
-      ...(title !== undefined && { title: ticket.title }),
-      ...(price !== undefined && { price: ticket.price }),
-      ...(artist !== undefined && { artist: ticket.artist }),
-      ...(venue !== undefined && { venue: ticket.venue }),
-      ...(city !== undefined && { city: ticket.city }),
-      ...(eventDate !== undefined && {
-        eventDate: ticket.eventDate.toISOString(),
-      }),
-      ...(eventType !== undefined && { eventType: ticket.eventType }),
-      ...(category !== undefined && { category: ticket.category }),
-      ...(seat !== undefined && { seat: ticket.seat }),
-      ...(quantity !== undefined && { quantity: ticket.quantity }),
-      ...(description !== undefined && { description: ticket.description }),
-      ...(imageUrl !== undefined && { imageUrl: ticket.imageUrl }),
-      ...(status !== undefined && { status: ticket.status }),
+      title: ticket.title,
+      price: ticket.price,
+      status: ticket.status,
+      version: 0,
     });
     res.status(200).send(ticket);
   },
