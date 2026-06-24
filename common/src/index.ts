@@ -23,3 +23,7 @@ export type { TicketCreatedEvent } from "./events/tickets/ticket-created-event";
 export type { TicketUpdatedEvent } from "./events/tickets/ticket-updated-event";
 export { STREAM_NAME, SUBJECTS, type Event } from "./models/event.model";
 export { EventType, TicketCategory, TicketStatus } from "./models/ticket.model";
+
+export type { OrderCancelledEvent } from "./events/orders/order-cancelled-event";
+export type { OrderCreatedEvent } from "./events/orders/order-created-event";
+export { OrderStatus } from "./models/order.model";

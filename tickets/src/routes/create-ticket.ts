@@ -1,7 +1,7 @@
-import { requireAuth, validateRequest } from "@venuepass/common";
+import { requireAuth, TicketStatus, validateRequest } from "@venuepass/common";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
-import { TicketCreatedPublisher } from "../events/publishers/ticket-created.publisher";
+import { TicketCreatedPublisher } from "../events/publishers/ticket-created-publisher";
 import { Ticket } from "../models/ticket.model";
 import { natsClient } from "../nats-client";
 
@@ -117,16 +117,8 @@ router.post(
       title: ticket.title,
       price: ticket.price,
       userId: ticket.userId,
-      artist: ticket.artist,
-      venue: ticket.venue,
-      city: ticket.city,
-      eventDate: ticket.eventDate.toISOString(),
-      eventType: ticket.eventType,
-      category: ticket.category,
-      seat: ticket.seat,
-      ...(ticket.quantity && { quantity: ticket.quantity }),
-      ...(ticket.description && { description: ticket.description }),
-      ...(ticket.imageUrl && { imageUrl: ticket.imageUrl }),
+      version: 0,
+      status: TicketStatus.AVAILABLE,
     });
     res.status(201).send(ticket);
   },

@@ -142,21 +142,10 @@ router.patch(
     await new TicketUpdatedPublisher(natsClient.client).publish({
       id: ticket.id,
       userId: ticket.userId,
-      ...(title !== undefined && { title: ticket.title }),
-      ...(price !== undefined && { price: ticket.price }),
-      ...(artist !== undefined && { artist: ticket.artist }),
-      ...(venue !== undefined && { venue: ticket.venue }),
-      ...(city !== undefined && { city: ticket.city }),
-      ...(eventDate !== undefined && {
-        eventDate: ticket.eventDate.toISOString(),
-      }),
-      ...(eventType !== undefined && { eventType: ticket.eventType }),
-      ...(category !== undefined && { category: ticket.category }),
-      ...(seat !== undefined && { seat: ticket.seat }),
-      ...(quantity !== undefined && { quantity: ticket.quantity }),
-      ...(description !== undefined && { description: ticket.description }),
-      ...(imageUrl !== undefined && { imageUrl: ticket.imageUrl }),
-      ...(status !== undefined && { status: ticket.status }),
+      title: ticket.title,
+      price: ticket.price,
+      status: ticket.status,
+      version: 0,
     });
     res.status(200).send(ticket);
   },

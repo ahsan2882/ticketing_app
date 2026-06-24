@@ -1,10 +1,10 @@
 import { EventType, TicketCategory } from "@venuepass/common";
 import request from "supertest";
 import { app } from "../../app";
-import { TicketCreatedPublisher } from "../../events/publishers/ticket-created.publisher";
+import { TicketCreatedPublisher } from "../../events/publishers/ticket-created-publisher";
 import { Ticket } from "../../models/ticket.model";
 
-jest.mock("../../events/publishers/ticket-created.publisher");
+jest.mock("../../events/publishers/ticket-created-publisher");
 
 const validTicketPayload = () => ({
   title: "Rock Night 2026",
