@@ -1,4 +1,10 @@
-import { requireAuth, TicketStatus, validateRequest } from "@venuepass/common";
+import {
+  EventType,
+  requireAuth,
+  TicketCategory,
+  TicketStatus,
+  validateRequest,
+} from "@venuepass/common";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
 import { TicketCreatedPublisher } from "../events/publishers/ticket-created-publisher";
@@ -46,17 +52,10 @@ router.post(
       .toDate()
       .withMessage("Event date must be a valid date"),
     body("eventType")
-      .isIn([
-        "concert",
-        "sports",
-        "theatre",
-        "comedy",
-        "festival",
-        "conference",
-      ])
+      .isIn(Object.values(EventType))
       .withMessage("Invalid event type"),
     body("category")
-      .isIn(["standard", "VIP", "floor", "balcony", "box"])
+      .isIn(Object.values(TicketCategory))
       .withMessage("Invalid ticket category"),
     body("seat")
       .isString()
@@ -117,7 +116,7 @@ router.post(
       title: ticket.title,
       price: ticket.price,
       userId: ticket.userId,
-      version: 0,
+      version: ticket.version,
       status: TicketStatus.AVAILABLE,
     });
     res.status(201).send(ticket);

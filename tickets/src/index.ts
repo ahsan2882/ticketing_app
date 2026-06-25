@@ -2,8 +2,9 @@ import { ServiceConnectionError } from "@venuepass/common";
 import mongoose from "mongoose";
 import { app } from "./app";
 import { natsClient } from "./nats-client";
+import { healthState } from "./health";
 
-const start = async () => {
+const validateEnv = () => {
   const nodeEnv = process.env.NODE_ENV;
   if (!nodeEnv) {
     throw new Error("NODE_ENV environment variable is not defined");
@@ -20,45 +21,51 @@ const start = async () => {
   if (!process.env.NATS_URL) {
     throw new Error("NATS_URL environment variable is not defined");
   }
+};
+
+const start = async () => {
+  validateEnv();
+  app.listen(3000, () => {
+    console.log("Listening on port 3000");
+  });
   try {
-    await Promise.all([connectMongoWithRetry(), connectNatsClientWithRetry()]);
-    app.listen(3000, () => {
-      console.log("Listening on port 3000");
-    });
+    await Promise.all([connectMongo(), connectNatsClient()]);
   } catch (err) {
+    healthState.setMongoNotReady();
+    healthState.setNatsNotReady();
     console.error("Fatal startup error:", err);
-    process.exit(1);
   }
 };
 
-const connectMongoWithRetry = async (retries = 10) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await mongoose.connect(process.env.TICKETS_MONGO_URI!);
-      console.log("Connected to MongoDB");
+const connectMongo = async (retries = 10) => {
+  mongoose.connection.on("connected", () => {
+    healthState.setMongoReady();
+    console.log("Connected to MongoDB");
+  });
 
-      return;
-    } catch (err) {
-      console.error(`Mongo connection failed (${i + 1}/${retries})`);
-      await new Promise((res) => setTimeout(res, 3000));
-    }
-  }
+  mongoose.connection.on("disconnected", () => {
+    healthState.setMongoNotReady();
+    console.error("Error connecting to database");
+  });
 
-  throw new ServiceConnectionError("Error connecting to database");
+  mongoose.connection.on("error", (err) => {
+    healthState.setMongoNotReady();
+    console.error("Error connecting to database");
+  });
+
+  await mongoose.connect(process.env.TICKETS_MONGO_URI!);
 };
 
-const connectNatsClientWithRetry = async (retries = 10) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await natsClient.connect();
-      console.log("Connected to nats client!");
-      return;
-    } catch (error) {
-      console.error(`Nats client connection failed (${i + 1}/${retries})`);
-      await new Promise((res) => setTimeout(res, 3000));
-    }
+const connectNatsClient = async (retries = 10) => {
+  try {
+    await natsClient.connect();
+  } catch (error) {
+    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
   }
-  throw new ServiceConnectionError("Error connecting to nats client");
 };
 
-void start();
+void start().catch((err) => {
+  console.error("Fatal startup error:", err);
+
+  throw new ServiceConnectionError("Error starting tickets service");
+});

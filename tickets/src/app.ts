@@ -7,6 +7,7 @@ import { createTicketRouter } from "./routes/create-ticket";
 import { findAllTicketRouter } from "./routes/find-all-tickets";
 import { findTicketRouter } from "./routes/find-ticket";
 import { updateTicketRouter } from "./routes/update-ticket";
+import { healthState } from "./health";
 
 const app = express();
 app.set("trust proxy", true);
@@ -27,6 +28,29 @@ app.use(createTicketRouter);
 app.use(findTicketRouter);
 app.use(findAllTicketRouter);
 app.use(updateTicketRouter);
+
+app.get("/healthz", (_req, res) => {
+  res.status(200).send({ status: "ok" });
+});
+
+app.get("/readyz", (_req, res) => {
+  const mongo = healthState.isMongoReady();
+  const nats = healthState.isNatsReady();
+
+  if (!healthState.isReady()) {
+    return res.status(503).send({
+      status: "not_ready",
+      mongo,
+      nats,
+    });
+  }
+
+  res.status(200).send({
+    status: "ready",
+    mongo,
+    nats,
+  });
+});
 
 app.all("/{*splat}", async (req, res) => {
   throw new NotFoundError();

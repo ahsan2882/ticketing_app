@@ -5,6 +5,7 @@ export interface ConsumerConfig {
   readonly durableName: string;
   readonly filterSubject: string;
   readonly ackWaitMs: number;
+  readonly maxDeliveryAttempts: number;
 }
 
 export class JetStreamSetupService {
@@ -34,7 +35,22 @@ export class JetStreamSetupService {
         deliver_policy: DeliverPolicy.All,
         filter_subject: config.filterSubject,
         ack_wait: millis(config.ackWaitMs),
+        max_deliver: config.maxDeliveryAttempts,
       });
     }
   }
+
+  // TODO: Poison Queue Implementation
+  // async createDeadLetterStream() {
+  //   try {
+  //     await this.jetStreamManager.streams.add({
+  //       name: "DEAD-LETTER",
+  //       subjects: ["dead-letter.>"],
+  //       retention: RetentionPolicy.Limits,
+  //       max_age: 30 * 24 * 60 * 60 * 1_000_000_000,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error creating dead letter stream", error);
+  //   }
+  // }
 }

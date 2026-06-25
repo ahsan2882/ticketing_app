@@ -7,6 +7,9 @@ export enum SUBJECTS {
   OrderCancelled = "order.cancelled",
 }
 
+// TODO: Posion Queue Implementation
+// export const DEAD_LETTER_SUBJECT_PREFIX = "dead-letter";
+
 export interface Event<TData> {
   subject: SUBJECTS;
   data: TData;

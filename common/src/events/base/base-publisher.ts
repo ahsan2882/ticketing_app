@@ -23,7 +23,7 @@ export abstract class Publisher<TEvent extends Event<any>> {
     );
 
     console.log(
-      `Event published to stream ${publishAck.stream}, sequence ${publishAck.seq}`,
+      `Event published to stream ${publishAck.stream}, sequence ${publishAck.seq}, data: ${JSON.stringify(data)}`,
     );
 
     return publishAck;

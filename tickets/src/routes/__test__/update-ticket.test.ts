@@ -24,7 +24,6 @@ const buildTicket = async (
     quantity: 1,
     description: "Original description",
     imageUrl: "https://example.com/original.jpg",
-    status: TicketStatus.AVAILABLE,
     ...overrides,
   });
 
@@ -787,6 +786,8 @@ describe("update ticket - event publishing", () => {
       .send(validUpdatePayload)
       .expect(200);
 
+    const updatedTicket = await Ticket.findById(ticket.id);
+
     expect(TicketUpdatedPublisher).toHaveBeenCalledTimes(1);
 
     const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
@@ -799,7 +800,7 @@ describe("update ticket - event publishing", () => {
       userId,
       title: validUpdatePayload.title,
       price: validUpdatePayload.price,
-      version: 0,
+      version: updatedTicket?.version,
     });
   });
 
@@ -813,6 +814,8 @@ describe("update ticket - event publishing", () => {
       .send({ title: "Only Title Updated" })
       .expect(200);
 
+    const updatedTicket = await Ticket.findById(ticket.id);
+
     const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
       .instances[0];
     const publishedData = publisherInstance.publish.mock.calls[0][0];
@@ -823,7 +826,7 @@ describe("update ticket - event publishing", () => {
       title: "Only Title Updated",
       price: 100,
       status: TicketStatus.AVAILABLE,
-      version: 0,
+      version: updatedTicket?.version,
     });
   });
 

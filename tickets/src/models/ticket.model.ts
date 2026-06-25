@@ -15,7 +15,6 @@ interface TicketAttrs {
   quantity?: number;
   description?: string;
   imageUrl?: string;
-  status?: TicketStatus;
 }
 
 interface TicketModel extends mongoose.Model<TicketDoc> {
@@ -38,9 +37,10 @@ interface TicketDoc extends mongoose.Document {
   description?: string;
   imageUrl?: string;
   status: TicketStatus;
+  version: number;
 }
 
-const ticketSchema = new mongoose.Schema(
+const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
   {
     title: {
       type: String,
@@ -112,8 +112,9 @@ const ticketSchema = new mongoose.Schema(
     },
   },
   {
+    optimisticConcurrency: true,
     toJSON: {
-      transform(_doc, ret) {
+      transform(doc, ret) {
         const {
           _id,
           title,
@@ -133,6 +134,7 @@ const ticketSchema = new mongoose.Schema(
         } = ret;
         return {
           id: _id,
+          version: doc.get("version"),
           title,
           price,
           userId,
@@ -150,7 +152,7 @@ const ticketSchema = new mongoose.Schema(
         };
       },
     },
-    versionKey: false,
+    versionKey: "version",
   },
 );
 

@@ -155,7 +155,7 @@ router.patch(
       title: ticket.title,
       price: ticket.price,
       status: ticket.status,
-      version: 0,
+      version: ticket.version,
     });
     res.status(200).send(ticket);
   },

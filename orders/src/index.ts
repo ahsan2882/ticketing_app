@@ -1,9 +1,12 @@
 import { ServiceConnectionError } from "@venuepass/common";
 import mongoose from "mongoose";
 import { app } from "./app";
+import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
+import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
+import { healthState } from "./health";
 import { natsClient } from "./nats-client";
 
-const start = async () => {
+const validateEnv = () => {
   const nodeEnv = process.env.NODE_ENV;
   if (!nodeEnv) {
     throw new Error("NODE_ENV environment variable is not defined");
@@ -20,48 +23,81 @@ const start = async () => {
   if (!process.env.NATS_URL) {
     throw new Error("NATS_URL environment variable is not defined");
   }
+};
+
+const start = async () => {
+  validateEnv();
+  setupGracefulShutdown();
+  app.listen(3000, () => {
+    console.log("Listening on port 3000");
+  });
   try {
-    await Promise.all([connectMongoWithRetry(), connectNatsClientWithRetry()]);
-    app.listen(3000, () => {
-      console.log("Listening on port 3000");
-    });
+    await Promise.all([connectMongo(), connectNats()]);
+    await startTicketListeners();
   } catch (err) {
-    console.error("Fatal startup error:", err);
-    process.exit(1);
+    healthState.setMongoNotReady();
+    healthState.setNatsNotReady();
+    console.error("Service connection failed", err);
   }
 };
 
-const connectMongoWithRetry = async (retries = 10) => {
-  for (let i = 0; i < retries; i++) {
+const connectMongo = async () => {
+  mongoose.connection.on("connected", () => {
+    healthState.setMongoReady();
+    console.log("Connected to MongoDB");
+  });
+
+  mongoose.connection.on("disconnected", () => {
+    healthState.setMongoNotReady();
+    console.error("Error connecting to database");
+  });
+
+  mongoose.connection.on("error", (err) => {
+    healthState.setMongoNotReady();
+    console.error("Error connecting to database");
+  });
+
+  await mongoose.connect(process.env.ORDERS_MONGO_URI!);
+};
+
+const connectNats = async () => {
+  try {
+    await natsClient.connect();
+  } catch (error) {
+    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
+  }
+};
+
+const startTicketListeners = async () => {
+  await Promise.all([
+    new TicketCreatedListener(natsClient.client).listen(),
+    new TicketUpdatedListener(natsClient.client).listen(),
+  ]);
+
+  console.log("Ticket listeners started");
+};
+
+const setupGracefulShutdown = (): void => {
+  const closeGracefully = async (): Promise<void> => {
+    console.log("Shutting down orders service...");
+
     try {
-      await mongoose.connect(process.env.ORDERS_MONGO_URI!);
-      console.log("Connected to MongoDB");
+      await natsClient.drain();
+      await mongoose.connection.close();
 
-      return;
-    } catch (error) {
-      console.error(`Mongo connection failed (${i + 1}/${retries})`, error);
-      await new Promise((res) => setTimeout(res, 3000));
+      process.exit(0);
+    } catch (err) {
+      console.error("Error during shutdown:", err);
+      process.exit(1);
     }
-  }
+  };
 
-  throw new ServiceConnectionError("Error connecting to database");
+  process.on("SIGINT", () => void closeGracefully());
+  process.on("SIGTERM", () => void closeGracefully());
 };
 
-const connectNatsClientWithRetry = async (retries = 10) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await natsClient.connect();
-      console.log("Connected to nats client!");
-      return;
-    } catch (error) {
-      console.error(
-        `Nats client connection failed (${i + 1}/${retries})`,
-        error,
-      );
-      await new Promise((res) => setTimeout(res, 3000));
-    }
-  }
-  throw new ServiceConnectionError("Error connecting to nats client");
-};
+void start().catch((err) => {
+  console.error("Fatal startup error:", err);
 
-void start();
+  throw new ServiceConnectionError("Error starting orders service");
+});

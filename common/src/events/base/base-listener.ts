@@ -7,6 +7,7 @@ export abstract class Listener<TEvent extends Event<any>> {
   abstract readonly durableName: string;
 
   protected readonly ackWaitMs = 5_000;
+  protected readonly maxDeliveryAttempts = 5;
 
   private readonly jsonCodec = JSONCodec<Event<TEvent["data"]>>();
 
@@ -22,7 +23,11 @@ export abstract class Listener<TEvent extends Event<any>> {
       durableName: this.durableName,
       filterSubject: this.subject,
       ackWaitMs: this.ackWaitMs,
+      maxDeliveryAttempts: this.maxDeliveryAttempts,
     });
+
+    // TODO: Posion Queue Implementation
+    // await setupService.createDeadLetterStream();
 
     // jetstream
     const js = this.client.jetstream();
@@ -42,7 +47,6 @@ export abstract class Listener<TEvent extends Event<any>> {
       try {
         const parsedData = this.parseMessage(msg);
         await this.onMessage(parsedData, msg);
-        msg.ack();
       } catch (err) {
         console.error("Message processing failed:", err);
       }
@@ -58,4 +62,24 @@ export abstract class Listener<TEvent extends Event<any>> {
     }
     return event.data;
   }
+
+  // TODO: Posion Queue Implementation
+  // protected async publishToDeadLetter(
+  //   data: TEvent["data"],
+  //   msg: JsMsg,
+  // ): Promise<void> {
+  //   const js = this.client.jetstream();
+  //   const payload = {
+  //     originalSubject: msg.subject,
+  //     originalSeq: msg.seq,
+  //     deliveryCount: msg.info.deliveryCount,
+  //     data,
+  //     failedAt: new Date().toISOString(),
+  //     reason: "version-gap-exceeded-max-retries",
+  //   };
+  //   js.publish(
+  //     `${DEAD_LETTER_SUBJECT_PREFIX}.${this.subject}`,
+  //     JSON.stringify(payload),
+  //   );
+  // }
 }

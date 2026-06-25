@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Order, OrderStatus } from "./order.model";
 
 interface TicketAttrs {
+  id: string;
   title: string;
   price: number;
   userId: string;
@@ -12,11 +13,16 @@ interface TicketDoc extends mongoose.Document {
   title: string;
   price: number;
   userId: string;
+  version: number;
   isReserved(): Promise<boolean>;
 }
 
 interface TicketModel extends mongoose.Model<TicketDoc> {
   build(atts: TicketAttrs): TicketDoc;
+  findByEvent(event: {
+    id: string;
+    version: number;
+  }): Promise<TicketDoc | null>;
 }
 
 const ticketSchema = new mongoose.Schema(
@@ -26,18 +32,26 @@ const ticketSchema = new mongoose.Schema(
     userId: { type: String, required: true },
   },
   {
+    optimisticConcurrency: true,
     toJSON: {
       transform(doc, ret) {
-        const { _id, title, price, userId } = ret;
-        return { id: _id, title, price, userId };
+        const { _id, title, price, userId, __v } = ret;
+        return { id: _id, title, price, userId, version: __v };
       },
     },
-    versionKey: false,
+    versionKey: "version",
   },
 );
 
+ticketSchema.statics.findByEvent = (event: { id: string; version: number }) => {
+  return Ticket.findOne({ _id: event.id, version: event.version - 1 });
+};
 ticketSchema.statics.build = (attrs: TicketAttrs) => {
-  return new Ticket(attrs);
+  const { id, ...otherFields } = attrs;
+  return new Ticket({
+    _id: attrs.id,
+    ...otherFields,
+  });
 };
 
 ticketSchema.methods.isReserved = async function () {
