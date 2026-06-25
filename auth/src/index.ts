@@ -29,6 +29,7 @@ const start = async () => {
   } catch (error) {
     healthState.setMongoNotReady();
     console.error("MongoDB initial connection failed:", error);
+    throw new ServiceConnectionError("Error connecting to MongoDB");
   }
 };
 

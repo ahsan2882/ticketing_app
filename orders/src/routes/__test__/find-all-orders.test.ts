@@ -11,6 +11,7 @@ const createTicket = async (
     userId: new mongoose.Types.ObjectId().toHexString(),
     title: overrides.title ?? "Concert Ticket",
     price: overrides.price ?? 25,
+    id: new mongoose.Types.ObjectId().toHexString(),
   });
   await ticket.save();
   return ticket;

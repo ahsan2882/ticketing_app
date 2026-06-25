@@ -21,7 +21,6 @@ const buildTicket = async (
     quantity: 2,
     description: "Front row VIP ticket",
     imageUrl: "https://example.com/ticket.jpg",
-    status: TicketStatus.AVAILABLE,
     ...overrides,
   });
 
@@ -409,7 +408,9 @@ describe("find ticket - ticket data variations", () => {
   });
 
   it("returns sold status correctly", async () => {
-    const ticket = await buildTicket({ status: TicketStatus.SOLD });
+    const ticket = await buildTicket();
+    ticket.set({ status: TicketStatus.SOLD });
+    await ticket.save();
 
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
@@ -420,8 +421,9 @@ describe("find ticket - ticket data variations", () => {
   });
 
   it("returns reserved status correctly", async () => {
-    const ticket = await buildTicket({ status: TicketStatus.RESERVED });
-
+    const ticket = await buildTicket();
+    ticket.set({ status: TicketStatus.RESERVED });
+    await ticket.save();
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()
@@ -431,8 +433,9 @@ describe("find ticket - ticket data variations", () => {
   });
 
   it("returns cancelled status correctly", async () => {
-    const ticket = await buildTicket({ status: TicketStatus.CANCELLED });
-
+    const ticket = await buildTicket();
+    ticket.set({ status: TicketStatus.CANCELLED });
+    await ticket.save();
     const response = await request(app)
       .get(`/api/tickets/${ticket.id}`)
       .send()

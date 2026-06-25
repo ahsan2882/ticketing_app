@@ -2,7 +2,7 @@ import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";
-import { Ticket } from "../../models/ticket.model";
+import { Ticket, type TicketDoc } from "../../models/ticket.model";
 
 const createTicket = async (
   overrides: Partial<Parameters<typeof Ticket.build>[0]> = {},
@@ -19,11 +19,17 @@ const createTicket = async (
     category: TicketCategory.STANDARD,
     seat: "A1",
     quantity: 1,
-    status: TicketStatus.AVAILABLE,
     ...overrides,
   });
   await ticket.save();
   return ticket;
+};
+
+const updateTicketStatus = async (status: TicketStatus) => {
+  const newTicket = await createTicket();
+  newTicket.set({ status });
+  await newTicket.save();
+  return newTicket;
 };
 
 describe("find all tickets — basic accessibility", () => {
@@ -49,10 +55,10 @@ describe("find all tickets — basic accessibility", () => {
 
 describe("find all tickets — unauthenticated: only available tickets returned", () => {
   it("returns only 'available' tickets", async () => {
-    await createTicket({ status: TicketStatus.AVAILABLE });
-    await createTicket({ status: TicketStatus.SOLD });
-    await createTicket({ status: TicketStatus.RESERVED });
-    await createTicket({ status: TicketStatus.CANCELLED });
+    await createTicket();
+    await updateTicketStatus(TicketStatus.SOLD);
+    await updateTicketStatus(TicketStatus.RESERVED);
+    await updateTicketStatus(TicketStatus.CANCELLED);
 
     const { body } = await request(app).get("/api/tickets").expect(200);
 
@@ -61,17 +67,17 @@ describe("find all tickets — unauthenticated: only available tickets returned"
   });
 
   it("returns an empty array when no tickets are available", async () => {
-    await createTicket({ status: TicketStatus.SOLD });
-    await createTicket({ status: TicketStatus.CANCELLED });
+    await updateTicketStatus(TicketStatus.SOLD);
+    await updateTicketStatus(TicketStatus.CANCELLED);
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body).toHaveLength(0);
   });
 
   it("returns all available tickets when multiple exist", async () => {
-    await createTicket({ status: TicketStatus.AVAILABLE, title: "Show A" });
-    await createTicket({ status: TicketStatus.AVAILABLE, title: "Show B" });
-    await createTicket({ status: TicketStatus.SOLD });
+    await createTicket({ title: "Show A" });
+    await createTicket({ title: "Show B" });
+    await updateTicketStatus(TicketStatus.SOLD);
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body).toHaveLength(2);
@@ -79,14 +85,14 @@ describe("find all tickets — unauthenticated: only available tickets returned"
   });
 
   it("does not return 'sold' tickets", async () => {
-    await createTicket({ status: TicketStatus.SOLD });
+    await updateTicketStatus(TicketStatus.SOLD);
     const { body } = await request(app).get("/api/tickets").expect(200);
     const soldTickets = body.filter((t: any) => t.status === TicketStatus.SOLD);
     expect(soldTickets).toHaveLength(0);
   });
 
   it("does not return 'reserved' tickets", async () => {
-    await createTicket({ status: TicketStatus.RESERVED });
+    await updateTicketStatus(TicketStatus.RESERVED);
     const { body } = await request(app).get("/api/tickets").expect(200);
     const reserved = body.filter(
       (t: any) => t.status === TicketStatus.RESERVED,
@@ -95,7 +101,7 @@ describe("find all tickets — unauthenticated: only available tickets returned"
   });
 
   it("does not return 'cancelled' tickets", async () => {
-    await createTicket({ status: TicketStatus.CANCELLED });
+    await updateTicketStatus(TicketStatus.CANCELLED);
     const { body } = await request(app).get("/api/tickets").expect(200);
     const cancelled = body.filter(
       (t: any) => t.status === TicketStatus.CANCELLED,
@@ -111,10 +117,10 @@ describe("find all tickets — authenticated: all tickets returned regardless of
   });
 
   it("returns tickets of every status", async () => {
-    await createTicket({ status: TicketStatus.AVAILABLE });
-    await createTicket({ status: TicketStatus.SOLD });
-    await createTicket({ status: TicketStatus.RESERVED });
-    await createTicket({ status: TicketStatus.CANCELLED });
+    await createTicket();
+    await updateTicketStatus(TicketStatus.SOLD);
+    await updateTicketStatus(TicketStatus.RESERVED);
+    await updateTicketStatus(TicketStatus.CANCELLED);
 
     const { body } = await request(app)
       .get("/api/tickets")
@@ -141,7 +147,6 @@ describe("find all tickets — authenticated: all tickets returned regardless of
 describe("find all tickets — unauthenticated: public fields only", () => {
   it("returns all expected public fields", async () => {
     await createTicket({
-      status: TicketStatus.AVAILABLE,
       description: "Great show",
       imageUrl: "https://example.com/img.jpg",
       quantity: 3,
@@ -170,21 +175,21 @@ describe("find all tickets — unauthenticated: public fields only", () => {
   });
 
   it("does NOT expose 'seat' to unauthenticated users", async () => {
-    await createTicket({ status: TicketStatus.AVAILABLE, seat: "Z99" });
+    await createTicket({ seat: "Z99" });
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body[0]).not.toHaveProperty("seat");
   });
 
   it("does NOT expose 'userId' to unauthenticated users", async () => {
-    await createTicket({ status: TicketStatus.AVAILABLE });
+    await createTicket();
 
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body[0]).not.toHaveProperty("userId");
   });
 
   it("does not expose internal MongoDB '_id' (only transformed 'id')", async () => {
-    await createTicket({ status: TicketStatus.AVAILABLE });
+    await createTicket();
     const { body } = await request(app).get("/api/tickets").expect(200);
     // toJSON transform maps _id -> id
     expect(body[0]).toHaveProperty("id");
@@ -418,9 +423,9 @@ describe("find all tickets — data integrity", () => {
 
 describe("find all tickets — auth state comparison", () => {
   it("unauthenticated gets fewer tickets than authenticated when non-available tickets exist", async () => {
-    await createTicket({ status: TicketStatus.AVAILABLE });
-    await createTicket({ status: TicketStatus.SOLD });
-    await createTicket({ status: TicketStatus.RESERVED });
+    await createTicket();
+    await updateTicketStatus(TicketStatus.SOLD);
+    await updateTicketStatus(TicketStatus.RESERVED);
 
     const cookie = await global.signin();
 
@@ -436,8 +441,8 @@ describe("find all tickets — auth state comparison", () => {
   });
 
   it("both auth states see the same count when all tickets are available", async () => {
-    await createTicket({ title: "Tic1", status: TicketStatus.AVAILABLE });
-    await createTicket({ title: "Tic2", status: TicketStatus.AVAILABLE });
+    await createTicket({ title: "Tic1" });
+    await createTicket({ title: "Tic2" });
 
     const cookie = await global.signin();
 
@@ -452,7 +457,7 @@ describe("find all tickets — auth state comparison", () => {
   });
 
   it("authenticated response contains 'seat' that unauthenticated response withholds", async () => {
-    await createTicket({ seat: "SECRET-SEAT", status: TicketStatus.AVAILABLE });
+    await createTicket({ seat: "SECRET-SEAT" });
 
     const cookie = await global.signin();
 
@@ -468,7 +473,7 @@ describe("find all tickets — auth state comparison", () => {
 
   it("authenticated response contains 'userId' that unauthenticated response withholds", async () => {
     const userId = new (require("mongoose").Types.ObjectId)().toHexString();
-    await createTicket({ userId, status: TicketStatus.AVAILABLE });
+    await createTicket({ userId });
 
     const cookie = await global.signin();
 
@@ -502,8 +507,8 @@ describe("GET /api/tickets — empty collection", () => {
 
 describe("GET /api/tickets — scale", () => {
   beforeEach(async () => {
-    const tickets = Array.from({ length: 50 }, (_, i) =>
-      Ticket.build({
+    const tickets = Array.from({ length: 50 }, (_, i) => {
+      const ticket = Ticket.build({
         title: `Ticket ${i}`,
         price: 10 + i,
         userId: new mongoose.Types.ObjectId().toHexString(),
@@ -514,9 +519,12 @@ describe("GET /api/tickets — scale", () => {
         eventType: EventType.Festival,
         category: TicketCategory.STANDARD,
         seat: `S${i}`,
-        status: i % 2 === 0 ? TicketStatus.AVAILABLE : TicketStatus.SOLD,
-      }),
-    );
+      });
+      if (i % 2 === 0) {
+        ticket.set({ status: TicketStatus.SOLD });
+      }
+      return ticket;
+    });
     await Promise.all(tickets.map((t) => t.save()));
   });
 

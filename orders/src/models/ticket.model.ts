@@ -35,8 +35,8 @@ const ticketSchema = new mongoose.Schema(
     optimisticConcurrency: true,
     toJSON: {
       transform(doc, ret) {
-        const { _id, title, price, userId, __v } = ret;
-        return { id: _id, title, price, userId, version: __v };
+        const { _id, title, price, userId } = ret;
+        return { id: _id, title, price, userId, version: doc.get("version") };
       },
     },
     versionKey: "version",

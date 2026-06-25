@@ -49,6 +49,7 @@ export abstract class Listener<TEvent extends Event<any>> {
         await this.onMessage(parsedData, msg);
       } catch (err) {
         console.error("Message processing failed:", err);
+        msg.nak();
       }
     }
   }

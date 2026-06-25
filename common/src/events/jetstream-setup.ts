@@ -1,4 +1,8 @@
-import { AckPolicy, DeliverPolicy, millis, type JetStreamManager } from "nats";
+import { AckPolicy, DeliverPolicy, type JetStreamManager, nanos } from "nats";
+import type {
+  ConsumerInfo,
+  ConsumerUpdateConfig,
+} from "nats/lib/jetstream/jsapi_types";
 import { STREAM_NAME, SUBJECTS } from "../models/event.model";
 
 export interface ConsumerConfig {
@@ -23,20 +27,43 @@ export class JetStreamSetupService {
   }
 
   async ensureConsumer(config: ConsumerConfig): Promise<void> {
+    let currentInfo: ConsumerInfo;
     try {
-      await this.jetStreamManager.consumers.info(
+      // Consumer already exists - reconcile configuration
+      currentInfo = await this.jetStreamManager.consumers.info(
         STREAM_NAME,
         config.durableName,
       );
     } catch {
+      // Consumer does not exist - create it
       await this.jetStreamManager.consumers.add(STREAM_NAME, {
         durable_name: config.durableName,
         ack_policy: AckPolicy.Explicit,
         deliver_policy: DeliverPolicy.All,
         filter_subject: config.filterSubject,
-        ack_wait: millis(config.ackWaitMs),
+        ack_wait: nanos(config.ackWaitMs),
         max_deliver: config.maxDeliveryAttempts,
       });
+      return;
+    }
+    // Build update config with only the fields that need to change
+    const updateConfig: Partial<ConsumerUpdateConfig> = {};
+    if (config.maxDeliveryAttempts !== currentInfo.config.max_deliver) {
+      updateConfig.max_deliver = config.maxDeliveryAttempts;
+    }
+    if (config.filterSubject !== currentInfo.config.filter_subject) {
+      updateConfig.filter_subject = config.filterSubject;
+    }
+    if (nanos(config.ackWaitMs) !== currentInfo.config.ack_wait) {
+      updateConfig.ack_wait = nanos(config.ackWaitMs);
+    }
+
+    if (Object.keys(updateConfig).length > 0) {
+      await this.jetStreamManager.consumers.update(
+        STREAM_NAME,
+        config.durableName,
+        updateConfig,
+      );
     }
   }
 

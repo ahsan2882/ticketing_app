@@ -67,9 +67,16 @@ class NatsClient {
             healthState.setNatsNotReady();
             console.log("NATS reconnected");
 
-            await this.ensureJetStream();
-
-            healthState.setNatsReady();
+            try {
+              await this.ensureJetStream();
+              healthState.setNatsReady();
+            } catch (err) {
+              healthState.setNatsNotReady();
+              console.error(
+                "Failed to initialize JetStream after reconnect:",
+                err,
+              );
+            }
             break;
 
           case Events.Error:

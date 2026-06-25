@@ -14,14 +14,23 @@ export class TicketCreatedListener extends Listener<TicketCreatedEvent> {
     this.durableName = durableName;
   }
 
-  protected async onMessage(
-    data: TicketCreatedEvent["data"],
-    msg: JsMsg,
-  ): Promise<void> {
-    const { id, title, price, userId } = data;
-    const ticket = Ticket.build({ title, price, userId, id });
+  async onMessage(data: TicketCreatedEvent["data"], msg: JsMsg): Promise<void> {
+    const { id } = data;
+    // Check if ticket already exists to handle redelivered messages idempotently
+    const existingTicket = await Ticket.findById(id);
+    if (existingTicket) {
+      // Ticket already exists, treat as already processed
+      msg.ack();
+      return;
+    }
+
+    const ticket = Ticket.build({
+      title: data.title,
+      price: data.price,
+      userId: data.userId,
+      id,
+    });
     await ticket.save();
-    console.log(`Received event #${msg.seq}:`, data);
     msg.ack();
   }
 }

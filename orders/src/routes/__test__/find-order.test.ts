@@ -11,6 +11,7 @@ const createTicket = async (
     userId: new mongoose.Types.ObjectId().toHexString(),
     title: overrides.title ?? "Concert Ticket",
     price: overrides.price ?? 25,
+    id: new mongoose.Types.ObjectId().toHexString(),
   });
   await ticket.save();
   return ticket;
@@ -80,6 +81,7 @@ describe("find order - authorization / ownership", () => {
       title: "test",
       price: 100,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 
@@ -125,6 +127,7 @@ describe("find order - authorization / ownership", () => {
       title: "test",
       price: 100,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 
@@ -151,6 +154,7 @@ describe("find order - authorization / ownership", () => {
       title: "test",
       price: 100,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 
@@ -212,6 +216,7 @@ describe("find order - success response", () => {
       title: "Concert 2026",
       price: 120,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 

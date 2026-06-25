@@ -28,13 +28,25 @@ const start = async () => {
   app.listen(3000, () => {
     console.log("Listening on port 3000");
   });
-  try {
-    await Promise.all([connectMongo(), connectNatsClient()]);
-  } catch (err) {
-    healthState.setMongoNotReady();
-    healthState.setNatsNotReady();
-    console.error("Fatal startup error:", err);
-  }
+
+  // Use Promise.allSettled to handle each dependency independently
+  const results = await Promise.allSettled([connectMongo(), connectNatsClient()]);
+
+  // Process results and set health state for each connection
+  results.forEach((result, index) => {
+    const isMongo = index === 0;
+    if (result.status === "rejected") {
+      if (isMongo) {
+        healthState.setMongoNotReady();
+      } else {
+        healthState.setNatsNotReady();
+      }
+      console.error(
+        `Startup error on ${isMongo ? "MongoDB" : "NATS"}:`,
+        result.reason,
+      );
+    }
+  });
 };
 
 const connectMongo = async (retries = 10) => {

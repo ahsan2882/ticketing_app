@@ -50,15 +50,15 @@ const orderSchema = new mongoose.Schema(
   {
     optimisticConcurrency: true,
     toJSON: {
-      transform(_doc, ret) {
-        const { _id, userId, ticket, status, expiresAt, __v } = ret;
+      transform(doc, ret) {
+        const { _id, userId, ticket, status, expiresAt } = ret;
         return {
           id: _id,
           userId,
           ticket,
           status,
           expiresAt,
-          version: __v,
+          version: doc.get("version"),
         };
       },
     },
