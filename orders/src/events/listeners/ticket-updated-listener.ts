@@ -23,38 +23,31 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
     data: TicketUpdatedEvent["data"],
     msg: JsMsg,
   ): Promise<void> {
-    const { title, price } = data;
-    // const storedTicket = await Ticket.findById(data.id);
-    // if (!storedTicket) {
-    //   throw new Error(`Ticket with id ${data.id} not found`);
-    // }
-    // if (data.version <= storedTicket.version) {
-    //   console.log("Already processed this event");
-    //   msg.ack();
-    //   return;
-    // }
-    // if (data.version !== storedTicket.version + 1) {
-    //   if (msg.info.deliveryCount >= 5) {
-    //     console.error("Poison message: version gap never resolved", {
-    //       ticketId: data.id,
-    //       expected: storedTicket.version + 1,
-    //       received: data.version,
-    //       deliveryCount: msg.info.deliveryCount,
-    //     });
-    //     msg.ack(); // ack to stop further redelivery — we've handled it
-    //     return;
-    //   }
-    //   throw new Error(
-    //     `Out-of-order: expected version ${storedTicket.version + 1}, got ${data.version}`,
-    //   );
-    // }
-    const ticket = await Ticket.findByEvent(data);
+    const { id, title, price, version } = data;
+
+    // Fetch current ticket state with single DB query for performance
+    const ticket = await Ticket.findById(id);
     if (!ticket) {
-      throw new Error("Ticket not found");
+      throw new Error(`Ticket with id ${id} not found`);
     }
-    ticket.set({ title, price });
-    await ticket.save();
-    console.log(`Received event #${msg.seq}:`, data);
-    msg.ack();
+
+    // Case 1: Process the event if version is exactly one more than current
+    if (version === ticket.version + 1) {
+      ticket.set({ title, price });
+      await ticket.save();
+      console.log(`Received event #${msg.seq}:`, data);
+      msg.ack();
+    }
+    // Case 2: Already processed this version or stale (duplicate/out-of-order)
+    else if (version <= ticket.version) {
+      msg.ack();
+    }
+    // Case 3: Out-of-order gap - request redelivery with backoff
+    else {
+      console.warn(
+        `Out-of-order: expected version ${ticket.version + 1}, got ${version}`,
+      );
+      msg.nak(); // Tell NATS to keep trying with exponential backoff
+    }
   }
 }

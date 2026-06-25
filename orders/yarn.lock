@@ -1098,10 +1098,10 @@
   resolved "https://npm.home.arpa/@unrs/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-1.12.2.tgz#72da0da48d72b1e87831b9c0308931d3f4669027"
   integrity sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==
 
-"@venuepass/common@^1.0.47":
-  version "1.0.47"
-  resolved "https://npm.home.arpa/@venuepass/common/-/common-1.0.47.tgz#0a11ec6a778f722288625ae2af28bafaee0bfb1c"
-  integrity sha512-PFgMTDp1nthT9eFCC87KP0eHDTHV4Wm0GifcfMLyAAhSTfTKaZDHgFdZWR32T9h3A8wEENAixTr228hfz+IZ0A==
+"@venuepass/common@^1.0.48":
+  version "1.0.48"
+  resolved "https://npm.home.arpa/@venuepass/common/-/common-1.0.48.tgz#303b5c63aea55f78f2ff1bf3c002c03546c6d3f9"
+  integrity sha512-nY3twauQ+fTSob/gujX9Mtty7G0e+aJEiPvyZhnpJA+xgDUGa9H2IKr3NiFkMIDivVDskY0nr5svmby+Yk7XYg==
   dependencies:
     "@types/cookie-session" "^2.0.49"
     "@types/express" "^5.0.6"
@@ -1307,9 +1307,9 @@ bare-url@^2.2.2:
     bare-path "^3.0.0"
 
 baseline-browser-mapping@^2.10.38:
-  version "2.10.38"
-  resolved "https://npm.home.arpa/baseline-browser-mapping/-/baseline-browser-mapping-2.10.38.tgz#c84d093c4bf7325c5053c279d90f153c66526042"
-  integrity sha512-31/02mVB4yuQU6adKk5SlY6m+mxDwUq5KZkyYgnLrrKl7TEm1+3PyDtDBz2kOv/wxZz41GHsvV1A/u6RmiyBvw==
+  version "2.10.40"
+  resolved "https://npm.home.arpa/baseline-browser-mapping/-/baseline-browser-mapping-2.10.40.tgz#f372c8eb36ff4ad0b5e7ae467014abef124554ba"
+  integrity sha512-BSSLZ9/Cjjv7Gtj5B68ZzXcXUg8iOf3fme+FCuh8rC/Go+Kmh8cox7M3A8dolou16s64QjLPOSdngh7GxXvkSw==
 
 body-parser@^2.2.1:
   version "2.3.0"
