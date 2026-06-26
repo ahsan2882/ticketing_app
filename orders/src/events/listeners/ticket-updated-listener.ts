@@ -19,10 +19,7 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
     this.durableName = durableName;
   }
 
-  protected async onMessage(
-    data: TicketUpdatedEvent["data"],
-    msg: JsMsg,
-  ): Promise<void> {
+  async onMessage(data: TicketUpdatedEvent["data"], msg: JsMsg): Promise<void> {
     const { id, title, price, version } = data;
 
     // Fetch current ticket state with single DB query for performance
@@ -33,8 +30,13 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
 
     // Case 1: Process the event if version is exactly one more than current
     if (version === ticket.version + 1) {
-      ticket.set({ title, price });
-      await ticket.save();
+      await Ticket.updateOne(
+        { _id: id, version: ticket.version },
+        {
+          $set: { title, price },
+          $inc: { version: 1 },
+        },
+      );
       console.log(`Received event #${msg.seq}:`, data);
       msg.ack();
     }
@@ -42,12 +44,21 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
     else if (version <= ticket.version) {
       msg.ack();
     }
-    // Case 3: Out-of-order gap - request redelivery with backoff
+    // Case 3: Out-of-order gap - request redelivery with exponential backoff
     else {
       console.warn(
         `Out-of-order: expected version ${ticket.version + 1}, got ${version}`,
       );
-      msg.nak(); // Tell NATS to keep trying with exponential backoff
+
+      const deliveryCount = msg.info?.deliveryCount || 1;
+      // Calculate exponential backoff delay (cap at 3 seconds)
+      const backoffMs = Math.min(
+        3_000,
+        Math.pow(2, deliveryCount - 1) * 100,
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      msg.nak(); // Tell NATS to keep trying after delay
     }
   }
 }
