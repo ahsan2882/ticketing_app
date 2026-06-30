@@ -1,9 +1,14 @@
+import {
+  OrderStatus,
+  TicketStatus,
+  type TicketUpdatedEvent,
+} from "@venuepass/common";
+import mongoose from "mongoose";
 import type { JsMsg } from "nats";
-import { TicketStatus, type TicketUpdatedEvent } from "@venuepass/common";
+import { Order } from "../../../models/order.model";
+import { Ticket } from "../../../models/ticket.model";
 import { natsClient } from "../../../nats-client";
 import { TicketUpdatedListener } from "../ticket-updated-listener";
-import mongoose from "mongoose";
-import { Ticket } from "../../../models/ticket.model";
 
 const setUp = async () => {
   //creates and saves a ticket with the updated incoming version
@@ -119,5 +124,96 @@ describe("ticket updated listener", () => {
     expect(ticket?.price).toEqual(100);
     // Should have nak'd to request redelivery with backoff
     expect(msg.nak).toHaveBeenCalled();
+  });
+
+  it("advances the linked order from CREATED to AWAITING_PAYMENT when status is RESERVED", async () => {
+    const ticket = Ticket.build({
+      id: new mongoose.Types.ObjectId().toHexString(),
+      userId: new mongoose.Types.ObjectId().toHexString(),
+      title: "Reserved Ticket",
+      price: 50,
+    });
+    await ticket.save();
+
+    const order = Order.build({
+      userId: ticket.userId,
+      ticket,
+      status: OrderStatus.CREATED,
+    });
+    await order.save();
+
+    const listener = new TicketUpdatedListener(natsClient.client);
+    const data: TicketUpdatedEvent["data"] = {
+      id: ticket.id,
+      version: ticket.version + 1,
+      title: ticket.title,
+      price: ticket.price,
+      status: TicketStatus.RESERVED,
+      userId: ticket.userId,
+    };
+    // @ts-ignore
+    const msg: JsMsg = { ack: jest.fn() };
+
+    await listener.onMessage(data, msg);
+
+    const updatedOrder = await Order.findById(order.id);
+    expect(updatedOrder?.status).toEqual(OrderStatus.AWAITING_PAYMENT);
+    expect(msg.ack).toHaveBeenCalled();
+  });
+
+  it("does not touch the linked order when status is not RESERVED", async () => {
+    const ticket = Ticket.build({
+      id: new mongoose.Types.ObjectId().toHexString(),
+      userId: new mongoose.Types.ObjectId().toHexString(),
+      title: "Available Ticket",
+      price: 50,
+    });
+    await ticket.save();
+
+    const order = Order.build({
+      userId: ticket.userId,
+      ticket,
+      status: OrderStatus.CREATED,
+    });
+    await order.save();
+
+    const listener = new TicketUpdatedListener(natsClient.client);
+    const data: TicketUpdatedEvent["data"] = {
+      id: ticket.id,
+      version: ticket.version + 1,
+      title: "Renamed, still available",
+      price: 60,
+      status: TicketStatus.AVAILABLE,
+      userId: ticket.userId,
+    };
+    // @ts-ignore
+    const msg: JsMsg = { ack: jest.fn() };
+
+    await listener.onMessage(data, msg);
+
+    const untouchedOrder = await Order.findById(order.id);
+    expect(untouchedOrder?.status).toEqual(OrderStatus.CREATED);
+  });
+
+  it("throws and does not ack when the ticket does not exist locally", async () => {
+    const listener = new TicketUpdatedListener(natsClient.client);
+    const missingId = new mongoose.Types.ObjectId().toHexString();
+
+    const data: TicketUpdatedEvent["data"] = {
+      id: missingId,
+      version: 1,
+      title: "Ghost",
+      price: 10,
+      status: TicketStatus.AVAILABLE,
+      userId: new mongoose.Types.ObjectId().toHexString(),
+    };
+    // @ts-ignore
+    const msg: JsMsg = { ack: jest.fn(), nak: jest.fn() };
+
+    await expect(listener.onMessage(data, msg)).rejects.toThrow(
+      `Ticket with id ${missingId} not found`,
+    );
+    expect(msg.ack).not.toHaveBeenCalled();
+    expect(msg.nak).not.toHaveBeenCalled();
   });
 });

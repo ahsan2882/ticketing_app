@@ -4,6 +4,7 @@ import {
   NotFoundError,
   requireAuth,
   TicketCategory,
+  TicketStatus,
   UnauthorizedError,
   validateRequest,
 } from "@venuepass/common";
@@ -73,10 +74,6 @@ router.patch(
       .not()
       .isEmpty()
       .withMessage("Seat must be a string"),
-    body("quantity")
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage("Quantity must be a non-negative integer"),
     body("description")
       .optional()
       .isString()
@@ -91,18 +88,27 @@ router.patch(
   ],
   validateRequest,
   async (req: Request, res: Response) => {
+    const { id: ticketId } = req.params;
     if (
-      typeof req.params.id === "string" &&
-      !mongoose.Types.ObjectId.isValid(req.params.id)
+      typeof ticketId === "string" &&
+      !mongoose.Types.ObjectId.isValid(ticketId)
     ) {
-      throw new NotFoundError();
+      throw new BadRequestError("Invalid ID");
     }
-    const ticket: TicketDoc | null = await Ticket.findById(req.params.id);
+    const ticket: TicketDoc | null = await Ticket.findById(ticketId);
     if (!ticket) {
       throw new NotFoundError();
     }
     if (ticket.userId !== req.currentUser?.id) {
       throw new UnauthorizedError();
+    }
+    if (
+      ticket.status === TicketStatus.RESERVED ||
+      ticket.status === TicketStatus.SOLD
+    ) {
+      throw new BadRequestError(
+        `Ticket cannot be edited while in '${ticket.status}' status`,
+      );
     }
     const {
       title,
@@ -114,7 +120,6 @@ router.patch(
       eventType,
       category,
       seat,
-      quantity,
       description,
       imageUrl,
     } = req.body;
@@ -128,7 +133,6 @@ router.patch(
       eventType === undefined &&
       category === undefined &&
       seat === undefined &&
-      quantity === undefined &&
       description === undefined &&
       imageUrl === undefined
     ) {
@@ -144,11 +148,19 @@ router.patch(
       ...(eventType !== undefined && { eventType }),
       ...(category !== undefined && { category }),
       ...(seat !== undefined && { seat }),
-      ...(quantity !== undefined && { quantity }),
       ...(description !== undefined && { description }),
       ...(imageUrl !== undefined && { imageUrl }),
     });
-    await ticket.save();
+    try {
+      await ticket.save();
+    } catch (error) {
+      if (error instanceof mongoose.Error.VersionError) {
+        throw new BadRequestError(
+          "Ticket was modified concurrently, please try again",
+        );
+      }
+      throw error;
+    }
     await new TicketUpdatedPublisher(natsClient.client).publish({
       id: ticket.id,
       userId: ticket.userId,

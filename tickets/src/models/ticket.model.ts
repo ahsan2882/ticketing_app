@@ -1,6 +1,21 @@
 import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import mongoose from "mongoose";
 
+interface CreateTicketBody {
+  title: string;
+  price: number;
+  artist: string;
+  venue: string;
+  city: string;
+  eventDate: Date;
+  eventType: EventType;
+  category: TicketCategory;
+  seats?: string[];
+  quantity?: number;
+  description?: string;
+  imageUrl?: string;
+}
+
 interface TicketAttrs {
   title: string;
   price: number;
@@ -11,10 +26,9 @@ interface TicketAttrs {
   eventDate: Date;
   eventType: EventType;
   category: TicketCategory;
-  seat: string;
-  quantity?: number;
-  description?: string;
-  imageUrl?: string;
+  seat?: string;
+  description?: string | undefined;
+  imageUrl?: string | undefined;
 }
 
 interface TicketModel extends mongoose.Model<TicketDoc> {
@@ -32,12 +46,12 @@ interface TicketDoc extends mongoose.Document {
   eventDate: Date;
   eventType: EventType;
   category: TicketCategory;
-  seat: string;
-  quantity?: number;
+  seat?: string;
   description?: string;
   imageUrl?: string;
   status: TicketStatus;
   version: number;
+  orderId?: string;
 }
 
 const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
@@ -76,6 +90,10 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
     eventDate: {
       type: Date,
       required: true,
+      validate: {
+        validator: (v: Date) => v.getTime() > Date.now(),
+        message: "eventDate must be in the future",
+      },
     },
     eventType: {
       type: String,
@@ -90,12 +108,6 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
     seat: {
       type: String,
       trim: true,
-      required: true,
-    },
-    quantity: {
-      type: Number,
-      min: 0,
-      default: 1,
     },
     description: {
       type: String,
@@ -110,6 +122,7 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
       enum: Object.values(TicketStatus),
       default: TicketStatus.AVAILABLE,
     },
+    orderId: { type: String },
   },
   {
     optimisticConcurrency: true,
@@ -127,13 +140,12 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
           eventType,
           category,
           seat,
-          quantity,
           description,
           imageUrl,
           status,
         } = ret;
         return {
-          id: _id,
+          id: _id.toString(),
           version: doc.get("version"),
           title,
           price,
@@ -145,7 +157,6 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
           eventType,
           category,
           seat,
-          quantity,
           description,
           imageUrl,
           status,
@@ -162,4 +173,4 @@ ticketSchema.statics.build = (attrs: TicketAttrs) => {
 
 const Ticket = mongoose.model<TicketDoc, TicketModel>("Ticket", ticketSchema);
 
-export { Ticket, type TicketDoc };
+export { Ticket, type CreateTicketBody, type TicketAttrs, type TicketDoc };

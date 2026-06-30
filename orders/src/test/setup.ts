@@ -1,18 +1,20 @@
 import jwt from "jsonwebtoken";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
 
 declare global {
   var signin: (userId?: string) => Promise<string[]>;
 }
 
-let mongo: MongoMemoryServer;
+let mongo: MongoMemoryReplSet;
 
 jest.mock("../nats-client");
 
 beforeAll(async () => {
   process.env.JWT_KEY = "testing_jwt_key";
-  mongo = await MongoMemoryServer.create();
+  mongo = await MongoMemoryReplSet.create({
+    replSet: { count: 1, storageEngine: "wiredTiger" },
+  });
   const mongoUri = mongo.getUri();
   await mongoose.connect(mongoUri, {});
 });

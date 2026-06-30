@@ -39,7 +39,13 @@ router.post(
     const user = User.build({ email, password, name });
     try {
       await user.save();
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        throw new BadRequestError(
+          "User with this email already exists",
+          "credentials",
+        );
+      }
       console.error(err);
       throw new ServiceConnectionError("Error connecting to database");
     }
@@ -54,5 +60,11 @@ router.post(
     res.status(201).send(user);
   },
 );
+router.all("/api/users/signup", (req, res) => {
+  res
+    .status(405)
+    .set("Allow", "POST")
+    .send({ errors: [{ message: "Method not allowed" }] });
+});
 
 export { router as signUpRouter };

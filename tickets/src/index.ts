@@ -1,8 +1,10 @@
 import { ServiceConnectionError } from "@venuepass/common";
 import mongoose from "mongoose";
 import { app } from "./app";
-import { natsClient } from "./nats-client";
+import { OrderCancelledListener } from "./events/listeners/order-cancelled-listener";
+import { OrderCreatedListener } from "./events/listeners/order-created-listener";
 import { healthState } from "./health";
+import { natsClient } from "./nats-client";
 
 const validateEnv = () => {
   const nodeEnv = process.env.NODE_ENV;
@@ -25,12 +27,16 @@ const validateEnv = () => {
 
 const start = async () => {
   validateEnv();
+  setupGracefulShutdown();
   app.listen(3000, () => {
     console.log("Listening on port 3000");
   });
 
   // Use Promise.allSettled to handle each dependency independently
-  const results = await Promise.allSettled([connectMongo(), connectNatsClient()]);
+  const results = await Promise.allSettled([
+    connectMongo(),
+    connectNatsClient(),
+  ]);
 
   // Process results and set health state for each connection
   results.forEach((result, index) => {
@@ -47,6 +53,7 @@ const start = async () => {
       );
     }
   });
+  await startOrderListeners();
 };
 
 const connectMongo = async (retries = 10) => {
@@ -74,6 +81,32 @@ const connectNatsClient = async (retries = 10) => {
   } catch (error) {
     throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
   }
+};
+
+const startOrderListeners = async () => {
+  await Promise.all([
+    new OrderCreatedListener(natsClient.client).listen(),
+    new OrderCancelledListener(natsClient.client).listen(),
+  ]);
+
+  console.log("Order listeners started");
+};
+
+const setupGracefulShutdown = () => {
+  const closeGracefully = async () => {
+    console.log("Shutting down tickets service...");
+    try {
+      await natsClient.drain();
+      await mongoose.connection.close();
+
+      process.exit(0);
+    } catch (err) {
+      console.error("Error during shutdown:", err);
+      process.exit(1);
+    }
+  };
+  process.on("SIGINT", () => void closeGracefully());
+  process.on("SIGTERM", () => void closeGracefully());
 };
 
 void start().catch((err) => {

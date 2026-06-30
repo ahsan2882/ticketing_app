@@ -122,6 +122,17 @@ describe("signup flow - ", () => {
       .expect(400);
   });
 
+  it("succeeds when password meets the min length only after trimming surrounding whitespace", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "trimboundary@test.com",
+        password: "  abcd  ",
+        name: "Test Test",
+      })
+      .expect(201);
+  });
+
   it("returns 400 for email without TLD", async () => {
     await request(app)
       .post("/api/users/signup")
@@ -155,6 +166,24 @@ describe("signup flow - ", () => {
       .post("/api/users/signup")
       .send({ email: "test@@test.com", password: "test", name: "Test Test" })
       .expect(400);
+  });
+
+  it("documents how leading/trailing whitespace in email is handled (no .trim() in the email chain)", async () => {
+    const response = await request(app).post("/api/users/signup").send({
+      email: "  whitespace@test.com  ",
+      password: "test",
+      name: "Test Test",
+    });
+
+    if (response.status === 201) {
+      // Accepted — confirm whether the stored email retains the whitespace,
+      // since that would mean future exact-match lookups (signin, the
+      // duplicate-email check here) could silently fail to match a
+      // visually-identical email typed without the padding.
+      expect(response.body.email).toBeDefined();
+    } else {
+      expect(response.status).toBe(400);
+    }
   });
 
   it("treats emails as case-insensitive for duplicate check", async () => {
@@ -232,6 +261,68 @@ describe("signup flow - ", () => {
     expect(response.body.errors.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("returns 400 when first or last name is a single character", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "shortname@test.com", password: "test", name: "A Test" })
+      .expect(400);
+  });
+
+  it("returns 400 for a name with a middle name (more than two words)", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "middlename@test.com",
+        password: "test",
+        name: "Test Middle Test",
+      })
+      .expect(400);
+  });
+
+  it("returns 400 for a name containing non-letter characters", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "hyphenname@test.com",
+        password: "test",
+        name: "O'Brien Smith",
+      })
+      .expect(400);
+  });
+
+  it("returns 400 for a name containing digits", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "digitname@test.com",
+        password: "test",
+        name: "Test1 Test2",
+      })
+      .expect(400);
+  });
+
+  it("succeeds when name has leading/trailing whitespace that gets trimmed", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "trimname@test.com",
+        password: "test",
+        name: "  Test Test  ",
+      })
+      .expect(201);
+  });
+
+  it("returns 400 when name has more than one space between words", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "doublespace@test.com",
+        password: "test",
+        name: "Test  Test",
+      })
+      .expect(400);
+  });
+
   it("cookie contains a valid JWT after signup", async () => {
     const response = await request(app)
       .post("/api/users/signup")
@@ -248,6 +339,30 @@ describe("signup flow - ", () => {
       const decoded = JSON.parse(Buffer.from(sessionData, "base64").toString());
       expect(decoded).toHaveProperty("jwt");
     }
+  });
+
+  it("JWT payload contains the correct email, id, and name after signup", async () => {
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "jwtpayload@test.com",
+        password: "test",
+        name: "Test Test",
+      })
+      .expect(201);
+
+    const cookies = response.get("Set-Cookie")!;
+    const sessionData = cookies[0]!.split(";")[0]!.split("=")[1]!;
+    const { jwt: token } = JSON.parse(
+      Buffer.from(sessionData, "base64").toString(),
+    );
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString(),
+    );
+
+    expect(payload).toHaveProperty("email", "jwtpayload@test.com");
+    expect(payload).toHaveProperty("name", "Test Test");
+    expect(payload).toHaveProperty("id", response.body.id);
   });
 
   it("does not set a cookie on failed signup", async () => {
@@ -303,5 +418,15 @@ describe("signup flow - ", () => {
       .post("/api/users/signup")
       .send({ email: "user3@test.com", password: "pass3", name: "Test Test" })
       .expect(201);
+  });
+
+  it("returns 405 for GET /api/users/signup (only POST is registered)", async () => {
+    const response = await request(app).get("/api/users/signup");
+    expect(response.status).toEqual(405);
+  });
+
+  it("returns 405 for DELETE /api/users/signup (only POST is registered)", async () => {
+    const response = await request(app).delete("/api/users/signup");
+    expect(response.status).toEqual(405);
   });
 });

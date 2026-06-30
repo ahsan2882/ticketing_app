@@ -2,11 +2,12 @@ import { currentUser, errorHandler, NotFoundError } from "@venuepass/common";
 import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
+import { healthState } from "./health";
 import { cancelOrderRouter } from "./routes/cancel-order";
 import { createOrderRouter } from "./routes/create-order";
 import { findAllOrdersRouter } from "./routes/find-all-orders";
 import { findOrderRouter } from "./routes/find-order";
-import { healthState } from "./health";
+import { findOrdersByTicketRouter } from "./routes/find-orders-by-ticket";
 
 const app = express();
 app.set("trust proxy", true);
@@ -27,6 +28,7 @@ app.use(createOrderRouter);
 app.use(findAllOrdersRouter);
 app.use(findOrderRouter);
 app.use(cancelOrderRouter);
+app.use(findOrdersByTicketRouter);
 
 app.get("/healthz", (_req, res) => {
   res.status(200).send({ status: "ok" });

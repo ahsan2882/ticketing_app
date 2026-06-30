@@ -18,7 +18,6 @@ const buildTicket = async (
     eventType: EventType.Comedy,
     category: TicketCategory.VIP,
     seat: "A-12",
-    quantity: 2,
     description: "Front row VIP ticket",
     imageUrl: "https://example.com/ticket.jpg",
     ...overrides,
@@ -28,42 +27,52 @@ const buildTicket = async (
   return ticket;
 };
 
-describe("find ticket - invalid ticket id handling", () => {
-  it("returns 404 when id is not a valid ObjectId", async () => {
-    await request(app).get("/api/tickets/not-valid-id").send().expect(404);
+describe("find ticket - malformed ticket id handling", () => {
+  it("returns 400 when id is not a valid ObjectId", async () => {
+    await request(app).get("/api/tickets/not-valid-id").send().expect(400);
   });
 
-  it("returns 404 when id is an empty-ish invalid string", async () => {
-    await request(app).get("/api/tickets/abc").send().expect(404);
+  it("returns 400 when id is an empty-ish invalid string", async () => {
+    await request(app).get("/api/tickets/abc").send().expect(400);
   });
 
-  it("returns 404 when id contains special characters", async () => {
-    await request(app).get("/api/tickets/@@@###").send().expect(404);
+  it("returns 400 when id contains special characters", async () => {
+    await request(app).get("/api/tickets/@@@###").send().expect(400);
   });
 
-  it("returns 404 when id is too short to be an ObjectId", async () => {
-    await request(app).get("/api/tickets/123").send().expect(404);
+  it("returns 400 when id is too short to be an ObjectId", async () => {
+    await request(app).get("/api/tickets/123").send().expect(400);
   });
 
-  it("returns 404 when id is too long to be an ObjectId", async () => {
+  it("returns 400 when id is too long to be an ObjectId", async () => {
     await request(app)
       .get("/api/tickets/507f1f77bcf86cd799439011123")
       .send()
-      .expect(404);
+      .expect(400);
   });
 });
 
 describe("find ticket - not found behavior", () => {
-  it("returns 404 when ticket does not exist", async () => {
+  it("returns 404 when id is a valid ObjectId but no ticket exists", async () => {
     const id = new mongoose.Types.ObjectId().toHexString();
 
     await request(app).get(`/api/tickets/${id}`).send().expect(404);
   });
 
-  it("returns 404 for a valid ObjectId that belongs to no ticket", async () => {
+  it("returns 404 for a valid ObjectId instance that belongs to no ticket", async () => {
     const id = new mongoose.Types.ObjectId();
 
     await request(app).get(`/api/tickets/${id}`).send().expect(404);
+  });
+
+  it("returns 404 even when authenticated, if the ticket does not exist", async () => {
+    const id = new mongoose.Types.ObjectId().toHexString();
+
+    await request(app)
+      .get(`/api/tickets/${id}`)
+      .set("Cookie", await global.signin())
+      .send()
+      .expect(404);
   });
 });
 
@@ -89,7 +98,6 @@ describe("find ticket - public unauthenticated response", () => {
     expect(response.body.city).toEqual("Karachi");
     expect(response.body.eventType).toEqual(EventType.Comedy);
     expect(response.body.category).toEqual(TicketCategory.VIP);
-    expect(response.body.quantity).toEqual(2);
     expect(response.body.status).toEqual(TicketStatus.AVAILABLE);
     expect(response.body.description).toEqual("Front row VIP ticket");
     expect(response.body.imageUrl).toEqual("https://example.com/ticket.jpg");
@@ -223,7 +231,6 @@ describe("find ticket - authenticated response", () => {
       city: "Karachi",
       eventType: EventType.Comedy,
       category: TicketCategory.VIP,
-      quantity: 2,
       status: TicketStatus.AVAILABLE,
       description: "Front row VIP ticket",
       imageUrl: "https://example.com/ticket.jpg",
@@ -232,7 +239,7 @@ describe("find ticket - authenticated response", () => {
     });
   });
 
-  it("does not require authenticated user to own the ticket", async () => {
+  it("does not require the authenticated user to own the ticket", async () => {
     const ownerId = new mongoose.Types.ObjectId().toHexString();
 
     const ticket = await buildTicket({ userId: ownerId });
@@ -272,7 +279,7 @@ describe("find ticket - authenticated response", () => {
 });
 
 describe("find ticket - field projection behavior", () => {
-  it("does not return fields outside PUBLIC_FIELDS for unauthenticated users", async () => {
+  it("does not return fields outside the public field set for unauthenticated users", async () => {
     const ticket = await buildTicket();
 
     const response = await request(app)
@@ -291,7 +298,6 @@ describe("find ticket - field projection behavior", () => {
         "eventDate",
         "eventType",
         "category",
-        "quantity",
         "status",
         "description",
         "imageUrl",
@@ -299,7 +305,7 @@ describe("find ticket - field projection behavior", () => {
     );
   });
 
-  it("does not return fields outside PRIVATE_FIELDS for authenticated users", async () => {
+  it("does not return fields outside the private field set for authenticated users", async () => {
     const ticket = await buildTicket();
 
     const response = await request(app)
@@ -319,7 +325,6 @@ describe("find ticket - field projection behavior", () => {
         "eventDate",
         "eventType",
         "category",
-        "quantity",
         "status",
         "description",
         "imageUrl",
@@ -359,31 +364,7 @@ describe("find ticket - field projection behavior", () => {
 });
 
 describe("find ticket - ticket data variations", () => {
-  it("returns default quantity when quantity is not provided", async () => {
-    const ticket = Ticket.build({
-      title: "Comedy Night",
-      price: 50,
-      userId: new mongoose.Types.ObjectId().toHexString(),
-      artist: "Ali Gul Pir",
-      venue: "Arts Council",
-      city: "Karachi",
-      eventDate: new Date("2032-02-01T19:00:00.000Z"),
-      eventType: EventType.Comedy,
-      category: TicketCategory.STANDARD,
-      seat: "G-1",
-    });
-
-    await ticket.save();
-
-    const response = await request(app)
-      .get(`/api/tickets/${ticket.id}`)
-      .send()
-      .expect(200);
-
-    expect(response.body.quantity).toEqual(1);
-  });
-
-  it("returns default status when status is not provided", async () => {
+  it("returns default status of AVAILABLE when status is not provided", async () => {
     const ticket = Ticket.build({
       title: "Comedy Night",
       price: 50,
@@ -407,7 +388,7 @@ describe("find ticket - ticket data variations", () => {
     expect(response.body.status).toEqual(TicketStatus.AVAILABLE);
   });
 
-  it("returns sold status correctly", async () => {
+  it("returns SOLD status correctly", async () => {
     const ticket = await buildTicket();
     ticket.set({ status: TicketStatus.SOLD });
     await ticket.save();
@@ -420,7 +401,7 @@ describe("find ticket - ticket data variations", () => {
     expect(response.body.status).toEqual(TicketStatus.SOLD);
   });
 
-  it("returns reserved status correctly", async () => {
+  it("returns RESERVED status correctly", async () => {
     const ticket = await buildTicket();
     ticket.set({ status: TicketStatus.RESERVED });
     await ticket.save();
@@ -432,19 +413,7 @@ describe("find ticket - ticket data variations", () => {
     expect(response.body.status).toEqual(TicketStatus.RESERVED);
   });
 
-  it("returns cancelled status correctly", async () => {
-    const ticket = await buildTicket();
-    ticket.set({ status: TicketStatus.CANCELLED });
-    await ticket.save();
-    const response = await request(app)
-      .get(`/api/tickets/${ticket.id}`)
-      .send()
-      .expect(200);
-
-    expect(response.body.status).toEqual(TicketStatus.CANCELLED);
-  });
-
-  it("returns sports event type correctly", async () => {
+  it("returns Sports event type correctly", async () => {
     const ticket = await buildTicket({ eventType: EventType.Sports });
 
     const response = await request(app)
@@ -455,7 +424,7 @@ describe("find ticket - ticket data variations", () => {
     expect(response.body.eventType).toEqual(EventType.Sports);
   });
 
-  it("returns theatre event type correctly", async () => {
+  it("returns Theatre event type correctly", async () => {
     const ticket = await buildTicket({ eventType: EventType.Theatre });
 
     const response = await request(app)
@@ -477,7 +446,7 @@ describe("find ticket - ticket data variations", () => {
     expect(response.body.category).toEqual(TicketCategory.VIP);
   });
 
-  it("returns balcony category correctly", async () => {
+  it("returns BALCONY category correctly", async () => {
     const ticket = await buildTicket({ category: TicketCategory.BALCONY });
 
     const response = await request(app)
@@ -544,5 +513,71 @@ describe("find ticket - multiple tickets", () => {
 
     expect(secondResponse.body.seat).toBeUndefined();
     expect(secondResponse.body.userId).toBeUndefined();
+  });
+});
+
+describe("find ticket - cross-route consistency with list endpoint", () => {
+  it("a SOLD ticket is excluded from the unauthenticated list but still fetchable directly by id", async () => {
+    const ticket = await buildTicket();
+    ticket.set({ status: TicketStatus.SOLD });
+    await ticket.save();
+
+    const listResponse = await request(app)
+      .get("/api/tickets")
+      .send()
+      .expect(200);
+    const idsInList = listResponse.body.map((t: any) => t.id);
+    expect(idsInList).not.toContain(ticket.id);
+
+    const detailResponse = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+    expect(detailResponse.body.id).toEqual(ticket.id);
+    expect(detailResponse.body.status).toEqual(TicketStatus.SOLD);
+  });
+});
+
+describe("find ticket - field projection on non-available tickets", () => {
+  it("returns the same public field set for a SOLD ticket as for an AVAILABLE one", async () => {
+    const ticket = await buildTicket();
+    ticket.set({ status: TicketStatus.SOLD });
+    await ticket.save();
+
+    const response = await request(app)
+      .get(`/api/tickets/${ticket.id}`)
+      .send()
+      .expect(200);
+
+    expect(Object.keys(response.body).sort()).toEqual(
+      [
+        "id",
+        "title",
+        "price",
+        "artist",
+        "venue",
+        "city",
+        "eventDate",
+        "eventType",
+        "category",
+        "status",
+        "description",
+        "imageUrl",
+      ].sort(),
+    );
+  });
+});
+
+describe("find ticket - id case sensitivity", () => {
+  it("finds the ticket when the id is supplied in uppercase hex", async () => {
+    const ticket = await buildTicket();
+    const uppercased = ticket.id.toUpperCase();
+
+    const response = await request(app)
+      .get(`/api/tickets/${uppercased}`)
+      .send();
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toEqual(ticket.id);
   });
 });

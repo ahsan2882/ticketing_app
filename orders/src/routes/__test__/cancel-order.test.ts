@@ -58,24 +58,24 @@ describe("cancel order - authentication", () => {
 });
 
 describe("cancel order - orderId validation", () => {
-  it("returns 404 if orderId is not a valid Mongo ObjectId", async () => {
+  it("returns 400 if orderId is not a valid Mongo ObjectId", async () => {
     const cookie = await global.signin();
 
     await request(app)
       .delete("/api/orders/not-a-valid-id")
       .set("Cookie", cookie)
       .send()
-      .expect(404);
+      .expect(400);
   });
 
-  it("returns 404 for a numeric-looking but invalid orderId", async () => {
+  it("returns 400 for a numeric-looking but invalid orderId", async () => {
     const cookie = await global.signin();
 
     await request(app)
       .delete("/api/orders/123456")
       .set("Cookie", cookie)
       .send()
-      .expect(404);
+      .expect(400);
   });
 });
 
@@ -263,6 +263,12 @@ describe("cancel order - successful cancellation", () => {
     const ticket = await createTicket();
     const order = await createOrder(userId, ticket);
 
+    // Bump the order to version 1 before cancelling, so this test can
+    // distinguish "always publishes 0" from "publishes the real version".
+    order.status = OrderStatus.AWAITING_PAYMENT;
+    await order.save();
+    expect(order.version).toEqual(1);
+
     await request(app)
       .delete(`/api/orders/${order.id}`)
       .set("Cookie", cookie)
@@ -272,9 +278,50 @@ describe("cancel order - successful cancellation", () => {
     expect(OrderCancelledPublisher.prototype.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         id: order.id,
-        version: 0,
+        version: 2, // incremented again by the cancel's own save()
       }),
     );
+  });
+
+  it("returns a clean error (not a 500) when the order was modified concurrently between read and save", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const cookie = await global.signin(userId);
+    const ticket = await createTicket();
+    const order = await createOrder(userId, ticket);
+
+    // Load a second, independent copy of the same order — simulating
+    // another request/process holding a stale in-memory version.
+    const staleCopy = await Order.findById(order.id);
+
+    // Advance the real document's version via the first copy, so the
+    // stale copy's version is now out of date.
+    order.status = OrderStatus.AWAITING_PAYMENT;
+    await order.save();
+
+    // Now force the route to operate on the stale copy by monkey-patching
+    // Order.findById for this one call so the route's internal lookup
+    // returns the out-of-date document instead of doing a fresh read.
+    const findByIdSpy = jest.spyOn(Order, "findById").mockImplementationOnce(
+      () =>
+        ({
+          populate: () => Promise.resolve(staleCopy),
+        }) as any,
+    );
+
+    const response = await request(app)
+      .delete(`/api/orders/${order.id}`)
+      .set("Cookie", cookie)
+      .send();
+
+    expect(response.status).not.toBe(500);
+    expect(response.status).toBe(400); // update if you use a ConflictError/409 instead
+
+    // The real document should still reflect the AWAITING_PAYMENT save,
+    // not have been overwritten by the stale cancel attempt.
+    const current = await Order.findById(order.id);
+    expect(current!.status).toEqual(OrderStatus.AWAITING_PAYMENT);
+
+    findByIdSpy.mockRestore();
   });
 
   it("publishes an event with only the ticket id (no price/title leakage)", async () => {

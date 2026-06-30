@@ -3,11 +3,11 @@ import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
 
+import { healthState } from "./health";
 import { createTicketRouter } from "./routes/create-ticket";
 import { findAllTicketRouter } from "./routes/find-all-tickets";
 import { findTicketRouter } from "./routes/find-ticket";
 import { updateTicketRouter } from "./routes/update-ticket";
-import { healthState } from "./health";
 
 const app = express();
 app.set("trust proxy", true);

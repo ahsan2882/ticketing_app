@@ -70,6 +70,15 @@ describe("signin flow - ", () => {
       .expect(400);
   });
 
+  it("returns 400 (not 500) when password is sent as a non-string value", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: 123456 })
+      .expect((res) => {
+        expect(res.status).not.toBe(500);
+      });
+  });
+
   it("returns errors array in the response body on 400", async () => {
     const response = await request(app)
       .post("/api/users/signin")
@@ -201,6 +210,24 @@ describe("signin flow - ", () => {
 
     expect(payload).toHaveProperty("email", "payload@test.com");
     expect(payload).toHaveProperty("id");
+  });
+
+  it("JWT payload contains the correct name", async () => {
+    const cookie = await global.signin(
+      "namecheck@test.com",
+      "validpass",
+      "Name Check",
+    );
+
+    const sessionData = cookie[0]!.split(";")[0]!.split("=")[1]!;
+    const { jwt: token } = JSON.parse(
+      Buffer.from(sessionData, "base64").toString(),
+    );
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString(),
+    );
+
+    expect(payload).toHaveProperty("name", "Name Check");
   });
 
   it("JWT has an expiry (exp claim) set", async () => {

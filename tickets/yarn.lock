@@ -758,6 +758,11 @@
   dependencies:
     "@sinonjs/commons" "^3.0.1"
 
+"@standard-schema/spec@^1.1.0":
+  version "1.1.0"
+  resolved "https://npm.home.arpa/@standard-schema/spec/-/spec-1.1.0.tgz#a79b55dbaf8604812f52d140b2c9ab41bc150bb8"
+  integrity sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==
+
 "@tybys/wasm-util@^0.10.3":
   version "0.10.3"
   resolved "https://npm.home.arpa/@tybys/wasm-util/-/wasm-util-0.10.3.tgz#015cba9e9dd47ce14d03d2a8c5d547bfb169665d"
@@ -1098,10 +1103,10 @@
   resolved "https://npm.home.arpa/@unrs/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-1.12.2.tgz#72da0da48d72b1e87831b9c0308931d3f4669027"
   integrity sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==
 
-"@venuepass/common@^1.0.48":
-  version "1.0.48"
-  resolved "https://npm.home.arpa/@venuepass/common/-/common-1.0.48.tgz#303b5c63aea55f78f2ff1bf3c002c03546c6d3f9"
-  integrity sha512-nY3twauQ+fTSob/gujX9Mtty7G0e+aJEiPvyZhnpJA+xgDUGa9H2IKr3NiFkMIDivVDskY0nr5svmby+Yk7XYg==
+"@venuepass/common@^1.0.52":
+  version "1.0.52"
+  resolved "https://npm.home.arpa/@venuepass/common/-/common-1.0.52.tgz#9bb3a71eb0938ac411823ad5ffc169384920ed41"
+  integrity sha512-hPlcGFPMW6LL+7jfRIgHPZSdyxXyzLTbXyzWFDmeH+VoMV3xRKB3+VFB86QGvn1xiK9g6mCkHurDWR2+yg4cZg==
   dependencies:
     "@types/cookie-session" "^2.0.49"
     "@types/express" "^5.0.6"
@@ -1279,9 +1284,9 @@ bare-fs@^4.5.5:
     fast-fifo "^1.3.2"
 
 bare-os@^3.0.1:
-  version "3.9.1"
-  resolved "https://npm.home.arpa/bare-os/-/bare-os-3.9.1.tgz#660228ca7ffc47a72e96b6047cdd9d8342994e2f"
-  integrity sha512-6M5XjcnsygQNPMCMPXSK379xrJFiZ/AEMNBmFEmQW8d/789VQATvriyi5r0HYTL9TkQ26rn3kgdTG3aisbrXkQ==
+  version "3.9.3"
+  resolved "https://npm.home.arpa/bare-os/-/bare-os-3.9.3.tgz#eaf8a978a5fdda3dafc702b0f001449249eabe49"
+  integrity sha512-fF4Q7QsyKVF5Rj0qvI8BgUNjqzC2JvQlpTaPLjVJVxYVUX5Zr9un+y3w1HmA4nNKdFmRBT8z/WmrjvXzXVerKQ==
 
 bare-path@^3.0.0:
   version "3.0.1"
@@ -1634,9 +1639,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.5.376:
-  version "1.5.378"
-  resolved "https://npm.home.arpa/electron-to-chromium/-/electron-to-chromium-1.5.378.tgz#9ce9591ebed23e8a9119970305084b43a2906454"
-  integrity sha512-VinvOAuuPmdD1guEgGv5f2Qp7/vlfqOrUOMYNnOD4wj3pit8kRsQHzfIf6teyUGWo15Tg5+bOJaRunvyltpVWQ==
+  version "1.5.381"
+  resolved "https://npm.home.arpa/electron-to-chromium/-/electron-to-chromium-1.5.381.tgz#037549001adc80e04834ede96dc52a1fbf6c9fde"
+  integrity sha512-n9Wa6yB+vDsGuA8AKbl/0z7HbvWqt5jxIdvr1IUicd0ryPrk7/xzwqLv8D9AbbvZ6avVNtXYLTfmgFHkwkyelg==
 
 emittery@^0.13.1:
   version "0.13.1"
@@ -2563,9 +2568,9 @@ js-tokens@^4.0.0:
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
 
 js-yaml@^3.13.1:
-  version "3.14.2"
-  resolved "https://npm.home.arpa/js-yaml/-/js-yaml-3.14.2.tgz#77485ce1dd7f33c061fd1b16ecea23b55fcb04b0"
-  integrity sha512-PMSmkqxr106Xa156c2M265Z+FTrPl+oxd/rgOQy2tijQeK5TxQ43psO1ZCwhVOSdnn+RzkzlRz/eY4BgJBYVpg==
+  version "3.15.0"
+  resolved "https://npm.home.arpa/js-yaml/-/js-yaml-3.15.0.tgz#586e5214eafe3e893756a41e979b50d89d3e4a67"
+  integrity sha512-ttBQIIQPDeLjpPOohtUdXuXUVoA2uIB6fEH9HyJ7234s5mBJ5wTx20njxplLZQgLaOfpmPQA7X2t5AX6tIPbog==
   dependencies:
     argparse "^1.0.7"
     esprima "^4.0.0"
@@ -2853,9 +2858,9 @@ mongodb-memory-server@^11.2.0:
     tslib "^2.8.1"
 
 mongodb@^7.2.0:
-  version "7.3.0"
-  resolved "https://npm.home.arpa/mongodb/-/mongodb-7.3.0.tgz#bd7d47c34590861fd37741914f259cea199d6c07"
-  integrity sha512-WpCqSx7JAU9vcyjm/SU7ydnHls2YrfU3Y3sx4Ml9D7sPe4mXPlaapndiurDXrQ7/VvJkB4/i7b7WovHb8bd8sg==
+  version "7.4.0"
+  resolved "https://npm.home.arpa/mongodb/-/mongodb-7.4.0.tgz#83f7cf64b26f3debe6c678141ee6490a2957cd46"
+  integrity sha512-giySkkdYiwoBFo/oCc8nzov3xOYZ/sB8OpAYk5GINRLEjVw0LDsm8xgQL0XMTyU4extQlDZjhdUr1ZEwKFaazw==
   dependencies:
     "@mongodb-js/saslprep" "^1.3.0"
     bson "^7.2.0"
@@ -2870,11 +2875,12 @@ mongodb@~7.2:
     bson "^7.2.0"
     mongodb-connection-string-url "^7.0.0"
 
-mongoose@^9.7.2:
-  version "9.7.2"
-  resolved "https://npm.home.arpa/mongoose/-/mongoose-9.7.2.tgz#d4cd0c2d51b9a86fd17ede94e9bf98999132573e"
-  integrity sha512-VxxS3tjOGRIvhBMd84RR7L1WbDdm08Qq6V88VMq6jP6aE1Q+NlbTZDBtye2NAyO48i5kBFxM2oxfX0CPKNwCMg==
+mongoose@^9.7.3:
+  version "9.7.3"
+  resolved "https://npm.home.arpa/mongoose/-/mongoose-9.7.3.tgz#df005bdb25a0ada692f334670ab479ccdd6f5767"
+  integrity sha512-9DsD4sq0tL9IKyfttZ6qn74KXBcD4lxDTzGXoAeOLMnDFFp1gqc5oc4s2BiMPbetJrLwvVylfyR4cqLst2pasQ==
   dependencies:
+    "@standard-schema/spec" "^1.1.0"
     kareem "3.3.0"
     mongodb "~7.2"
     mpath "0.9.0"
@@ -3134,9 +3140,9 @@ qs@^6.14.0, qs@^6.14.1, qs@^6.15.2:
     side-channel "^1.1.1"
 
 range-parser@^1.2.1:
-  version "1.2.1"
-  resolved "https://npm.home.arpa/range-parser/-/range-parser-1.2.1.tgz#3cf37023d199e1c24d1a55b84800c2f3e6468031"
-  integrity sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==
+  version "1.3.0"
+  resolved "https://npm.home.arpa/range-parser/-/range-parser-1.3.0.tgz#d7f19be812bb62721472b45d3be219ef09572b47"
+  integrity sha512-hek2mFQpPuI4E1BBKrSto+BU3e3x4xuarsbiwr3+lf7p44juvFMV0XFWQAP3xUyqXA4RrXLIoaSUGbSt056ZMw==
 
 raw-body@^3.0.2:
   version "3.0.2"

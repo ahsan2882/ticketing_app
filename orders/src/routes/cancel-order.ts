@@ -18,11 +18,12 @@ router.delete(
   requireAuth,
   async (req: Request, res: Response) => {
     const { orderId } = req.params;
-    if (orderId === undefined || Array.isArray(orderId)) {
+    if (
+      orderId === undefined ||
+      Array.isArray(orderId) ||
+      !mongoose.Types.ObjectId.isValid(orderId)
+    ) {
       throw new BadRequestError("Invalid ID");
-    }
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      throw new NotFoundError();
     }
     const order = await Order.findById(orderId).populate("ticket");
     if (!order) {
@@ -32,10 +33,28 @@ router.delete(
       throw new UnauthorizedError();
     }
     order.status = OrderStatus.CANCELLED;
-    await order.save();
+    try {
+      await order.save();
+    } catch (error: any) {
+      // optimisticConcurrency: true throws VersionError (err.name) when
+      // the order was modified by another request between our findById
+      // and this save — e.g. a double-cancel race, or a concurrent
+      // ticket-update side effect touching this same order. Translate
+      // into a clean 4xx instead of letting it surface as a 500; the
+      // request didn't fail for a server reason, it lost a race.
+      // NOTE: swap BadRequestError below for a ConflictError (409) if
+      // @venuepass/common exposes one — this is a 409-shaped situation,
+      // not really a 400.
+      if (error?.name === "VersionError") {
+        throw new BadRequestError(
+          "Order was modified concurrently, please retry",
+        );
+      }
+      throw error;
+    }
     await new OrderCancelledPublisher(natsClient.client).publish({
       id: order.id,
-      version: 0,
+      version: order.version,
       ticket: { id: order.ticket.id },
     });
     // return the order that was just cancelled to the user so they can see it in their orders list

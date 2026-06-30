@@ -40,6 +40,13 @@ describe("signout flow - ", () => {
     await request(app).post("/api/users/signout").unset("Cookie").expect(200);
   });
 
+  it("works even when the incoming session cookie is malformed garbage", async () => {
+    await request(app)
+      .post("/api/users/signout")
+      .set("Cookie", "session=not-valid-base64-or-json!!!")
+      .expect(200);
+  });
+
   it("JWT is no longer present in the cookie after signout", async () => {
     const cookie = await global.signin("jwt@test.com", "validpass");
 
@@ -62,6 +69,24 @@ describe("signout flow - ", () => {
         }
       }
     }
+  });
+
+  it("currentUser returns null when using the cookie returned from signout", async () => {
+    const cookie = await global.signin("postsignout@test.com", "validpass");
+
+    const signoutRes = await request(app)
+      .post("/api/users/signout")
+      .set("Cookie", cookie)
+      .expect(200);
+
+    const clearedCookie = signoutRes.get("Set-Cookie") ?? cookie;
+
+    const currentUserRes = await request(app)
+      .get("/api/users/currentuser")
+      .set("Cookie", clearedCookie)
+      .expect(200);
+
+    expect(currentUserRes.body).toEqual({ currentUser: null });
   });
 
   it("signing out twice in a row does not error", async () => {
@@ -157,11 +182,22 @@ describe("signout flow - ", () => {
     expect(response.headers["content-type"]).toMatch(/json/);
   });
 
-  it("returns 404 for GET /api/users/signout (only POST is registered)", async () => {
-    await request(app).get("/api/users/signout").expect(404);
+  it("ignores an unexpected request body without error", async () => {
+    await request(app)
+      .post("/api/users/signout")
+      .send({ foo: "bar", nested: { a: 1 } })
+      .expect(200);
   });
 
-  it("returns 404 for DELETE /api/users/signout (only POST is registered)", async () => {
-    await request(app).delete("/api/users/signout").expect(404);
+  it("returns 405 for GET /api/users/signout (only POST is registered)", async () => {
+    await request(app).get("/api/users/signout").expect(405);
+  });
+
+  it("returns 405 for DELETE /api/users/signout (only POST is registered)", async () => {
+    await request(app).delete("/api/users/signout").expect(405);
+  });
+
+  it("returns 405 for PUT /api/users/signout (only POST is registered)", async () => {
+    await request(app).put("/api/users/signout").expect(405);
   });
 });

@@ -1,5 +1,5 @@
-import type { JsMsg, NatsConnection } from "nats";
 import { Listener, SUBJECTS, type TicketCreatedEvent } from "@venuepass/common";
+import type { JsMsg, NatsConnection } from "nats";
 import { Ticket } from "../../models/ticket.model";
 
 export class TicketCreatedListener extends Listener<TicketCreatedEvent> {

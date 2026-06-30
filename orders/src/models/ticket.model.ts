@@ -14,7 +14,7 @@ interface TicketDoc extends mongoose.Document {
   price: number;
   userId: string;
   version: number;
-  isReserved(): Promise<boolean>;
+  isReserved(session?: mongoose.ClientSession): Promise<boolean>;
 }
 
 interface TicketModel extends mongoose.Model<TicketDoc> {
@@ -32,7 +32,13 @@ const ticketSchema = new mongoose.Schema(
     toJSON: {
       transform(doc, ret) {
         const { _id, title, price, userId } = ret;
-        return { id: _id, title, price, userId, version: doc.get("version") };
+        return {
+          id: _id.toString(),
+          title,
+          price,
+          userId,
+          version: doc.get("version"),
+        };
       },
     },
     versionKey: "version",
@@ -47,7 +53,9 @@ ticketSchema.statics.build = (attrs: TicketAttrs) => {
   });
 };
 
-ticketSchema.methods.isReserved = async function () {
+ticketSchema.methods.isReserved = async function (
+  session?: mongoose.ClientSession,
+) {
   const existingOrder = await Order.findOne({
     ticket: this,
     status: {
@@ -57,7 +65,7 @@ ticketSchema.methods.isReserved = async function () {
         OrderStatus.COMPLETED,
       ],
     },
-  });
+  }).session(session ?? null);
   return !!existingOrder;
 };
 

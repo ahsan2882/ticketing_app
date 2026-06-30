@@ -31,14 +31,22 @@ const start = async () => {
   app.listen(3000, () => {
     console.log("Listening on port 3000");
   });
-  try {
-    await Promise.all([connectMongo(), connectNats()]);
-    await startTicketListeners();
-  } catch (err) {
-    healthState.setMongoNotReady();
-    healthState.setNatsNotReady();
-    console.error("Service connection failed", err);
-  }
+  const results = await Promise.allSettled([connectMongo(), connectNats()]);
+  results.forEach((result, index) => {
+    const isMongo = index === 0;
+    if (result.status === "rejected") {
+      if (isMongo) {
+        healthState.setMongoNotReady();
+      } else {
+        healthState.setNatsNotReady();
+      }
+      console.error(
+        `Startup error on ${isMongo ? "MongoDB" : "NATS"}:`,
+        result.reason,
+      );
+    }
+  });
+  await startTicketListeners();
 };
 
 const connectMongo = async () => {

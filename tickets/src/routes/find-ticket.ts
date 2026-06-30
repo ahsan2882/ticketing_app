@@ -1,4 +1,4 @@
-import { NotFoundError } from "@venuepass/common";
+import { BadRequestError, NotFoundError } from "@venuepass/common";
 import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 import { Ticket } from "../models/ticket.model";
@@ -6,18 +6,20 @@ import { Ticket } from "../models/ticket.model";
 const router = express.Router();
 
 const PUBLIC_FIELDS =
-  "title price artist venue city eventDate eventType category quantity status description imageUrl";
+  "title price artist venue city eventDate eventType category status description imageUrl";
 const PRIVATE_FIELDS = `${PUBLIC_FIELDS} userId seat`;
 
 router.get("/api/tickets/:id", async (req: Request, res: Response) => {
+  const ticketId = req.params.id;
   if (
-    typeof req.params.id === "string" &&
-    !mongoose.Types.ObjectId.isValid(req.params.id)
+    ticketId === undefined ||
+    Array.isArray(ticketId) ||
+    !mongoose.Types.ObjectId.isValid(ticketId)
   ) {
-    throw new NotFoundError();
+    throw new BadRequestError("Invalid ID");
   }
   const fields = req.currentUser ? PRIVATE_FIELDS : PUBLIC_FIELDS;
-  const ticket = await Ticket.findById(req.params.id).select(fields);
+  const ticket = await Ticket.findById(ticketId).select(fields);
   if (!ticket) {
     throw new NotFoundError();
   }

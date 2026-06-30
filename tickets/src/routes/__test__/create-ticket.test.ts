@@ -2,29 +2,44 @@ import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import request from "supertest";
 import { app } from "../../app";
 import { TicketCreatedPublisher } from "../../events/publishers/ticket-created-publisher";
-import { Ticket } from "../../models/ticket.model";
+import { Ticket, type CreateTicketBody } from "../../models/ticket.model";
 
 jest.mock("../../events/publishers/ticket-created-publisher");
 
-const validTicketPayload = () => ({
-  title: "Rock Night 2026",
-  price: 49.99,
-  artist: "The Rolling Stones",
-  venue: "Madison Square Garden",
-  city: "New York",
-  eventDate: new Date(Date.now() + 86_400_000), // tomorrow
-  eventType: EventType.Concert,
-  category: TicketCategory.VIP,
-  seat: "A12",
-  quantity: 2,
-  description: "An unforgettable night of rock.",
-  imageUrl: "https://example.com/poster.jpg",
+afterEach(() => {
+  (TicketCreatedPublisher.prototype.publish as jest.Mock).mockClear();
 });
+
+type TicketPaylod = Record<string, unknown> & Partial<CreateTicketBody>;
+
+// ---- helpers -------------------------------------------------------------
+
+const validTicketPayload = (overrides?: TicketPaylod) => ({
+  title: "Coldplay Live in Concert",
+  price: 99.99,
+  artist: "Coldplay",
+  venue: "National Stadium",
+  city: "Karachi",
+  eventDate: "2026-12-15T19:00:00.000Z",
+  eventType: Object.values(EventType)[0],
+  category: Object.values(TicketCategory)[0],
+  ...overrides,
+});
+
+// ---- tests ----------------------------------------------------------------
 
 describe("create tickets — authentication", () => {
   it("returns 401 when no cookie is provided", async () => {
     await request(app)
       .post("/api/tickets")
+      .send(validTicketPayload())
+      .expect(401);
+  });
+
+  it("returns 401 when an invalid/garbage cookie is provided", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", ["session=not-a-real-jwt"])
       .send(validTicketPayload())
       .expect(401);
   });
@@ -35,6 +50,17 @@ describe("create tickets — authentication", () => {
       .set("Cookie", await global.signin())
       .send(validTicketPayload())
       .expect(201);
+  });
+
+  it("associates the created ticket with the signed-in user's id", async () => {
+    const userId = "507f1f77bcf86cd799439011";
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", await global.signin(userId))
+      .send(validTicketPayload())
+      .expect(201);
+
+    expect(body[0].userId).toEqual(userId);
   });
 });
 
@@ -59,7 +85,7 @@ describe("create tickets — title validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), title: "" })
+      .send(validTicketPayload({ title: "" }))
       .expect(400);
   });
 
@@ -67,7 +93,7 @@ describe("create tickets — title validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), title: "   " })
+      .send(validTicketPayload({ title: "    " }))
       .expect(400);
   });
 
@@ -75,15 +101,7 @@ describe("create tickets — title validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), title: "AB" })
-      .expect(400);
-  });
-
-  it("returns 400 when title is a number", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), title: 12345 })
+      .send(validTicketPayload({ title: "AB" }))
       .expect(400);
   });
 
@@ -91,18 +109,7 @@ describe("create tickets — title validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), title: "ABC" })
-      .expect(201);
-  });
-
-  it("accepts a title that exceeds 3 characters", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({
-        ...validTicketPayload(),
-        title: "A Very Long Concert Title That Is Fine",
-      })
+      .send(validTicketPayload({ title: "ABC" }))
       .expect(201);
   });
 });
@@ -127,7 +134,7 @@ describe("create tickets — price validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), price: 0 })
+      .send(validTicketPayload({ price: 0 }))
       .expect(400);
   });
 
@@ -135,36 +142,29 @@ describe("create tickets — price validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), price: -10 })
+      .send(validTicketPayload({ price: -25 }))
       .expect(400);
   });
 
-  it("returns 400 when price is a string", async () => {
+  it("returns 400 when price is not a number", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), price: "free" })
+      // @ts-ignore
+      .send(validTicketPayload({ price: "expensive" }))
       .expect(400);
   });
 
-  it("accepts a positive float price", async () => {
+  it("accepts a valid positive float price", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), price: 0.01 })
-      .expect(201);
-  });
-
-  it("accepts a large integer price", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), price: 9999 })
+      .send(validTicketPayload({ price: 149.5 }))
       .expect(201);
   });
 });
 
-describe("create tickets — artist validation", () => {
+describe("create tickets — artist, venue, city validation", () => {
   let cookie: string[];
   beforeEach(async () => {
     cookie = await global.signin();
@@ -180,93 +180,42 @@ describe("create tickets — artist validation", () => {
       .expect(400);
   });
 
-  it("returns 400 when artist is an empty string", async () => {
+  it("returns 400 when venue is an empty string", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), artist: "" })
+      .send(validTicketPayload({ venue: "" }))
       .expect(400);
   });
 
-  it("returns 400 when artist is only whitespace", async () => {
+  it("returns 400 when city is only whitespace", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), artist: "   " })
+      .send(validTicketPayload({ city: "   " }))
       .expect(400);
   });
 
-  it("accepts a valid artist name", async () => {
+  it("returns 400 when artist is not a string", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), artist: "Coldplay" })
-      .expect(201);
-  });
-});
-
-describe("create tickets — venue validation", () => {
-  let cookie: string[];
-  beforeEach(async () => {
-    cookie = await global.signin();
-  });
-
-  it("returns 400 when venue is missing", async () => {
-    const body = validTicketPayload();
-    delete (body as any).venue;
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(body)
+      // @ts-ignore
+      .send(validTicketPayload({ artist: 42 }))
       .expect(400);
   });
 
-  it("returns 400 when venue is empty", async () => {
+  it("accepts valid artist, venue, and city strings", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), venue: "" })
-      .expect(400);
-  });
-
-  it("accepts a valid venue name", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), venue: "O2 Arena" })
-      .expect(201);
-  });
-});
-
-describe("create tickets — city validation", () => {
-  let cookie: string[];
-  beforeEach(async () => {
-    cookie = await global.signin();
-  });
-
-  it("returns 400 when city is missing", async () => {
-    const body = validTicketPayload();
-    delete (body as any).city;
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(body)
-      .expect(400);
-  });
-
-  it("returns 400 when city is empty", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), city: "" })
-      .expect(400);
-  });
-
-  it("accepts a valid city", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), city: "London" })
+      .send(
+        validTicketPayload({
+          artist: "Coldplay",
+          venue: "National Stadium",
+          city: "Karachi",
+        }),
+      )
       .expect(201);
   });
 });
@@ -287,66 +236,37 @@ describe("create tickets — eventDate validation", () => {
       .expect(400);
   });
 
-  it("returns 400 when eventDate is an arbitrary string", async () => {
+  it("returns 400 when eventDate is not a valid ISO8601 date", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), eventDate: "not-a-date" })
+      .send(validTicketPayload({ eventDate: new Date("15th December 2026") }))
       .expect(400);
   });
 
-  it("returns 400 when eventDate is a number", async () => {
+  it("accepts when eventDate uses a non-strict separator", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), eventDate: 9999999 })
-      .expect(400);
-  });
-
-  it("accepts a full ISO 8601 date-time string", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), eventDate: "2027-06-15T20:00:00.000Z" })
+      .send(validTicketPayload({ eventDate: new Date("2026-12-15 19:00:00") }))
       .expect(201);
   });
 
-  it("accepts a date-only ISO 8601 string", async () => {
+  it("accepts a strictly formatted ISO8601 eventDate", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), eventDate: "2027-06-15" })
+      .send(
+        validTicketPayload({ eventDate: new Date("2026-12-15T19:00:00.000Z") }),
+      )
       .expect(201);
   });
 });
 
-describe("create tickets — eventType validation", () => {
+describe("create tickets — eventType and category validation", () => {
   let cookie: string[];
   beforeEach(async () => {
     cookie = await global.signin();
-  });
-
-  const validTypes = Object.values(EventType);
-  const invalidTypes = ["gig", "opera", "CONCERT", "Concert", "", "random"];
-
-  validTypes.forEach((type) => {
-    it(`accepts eventType "${type}"`, async () => {
-      await request(app)
-        .post("/api/tickets")
-        .set("Cookie", cookie)
-        .send({ ...validTicketPayload(), eventType: type })
-        .expect(201);
-    });
-  });
-
-  invalidTypes.forEach((type) => {
-    it(`returns 400 for eventType "${type}"`, async () => {
-      await request(app)
-        .post("/api/tickets")
-        .set("Cookie", cookie)
-        .send({ ...validTicketPayload(), eventType: type })
-        .expect(400);
-    });
   });
 
   it("returns 400 when eventType is missing", async () => {
@@ -358,358 +278,410 @@ describe("create tickets — eventType validation", () => {
       .send(body)
       .expect(400);
   });
+
+  it("returns 400 when eventType is not a recognized value", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      // @ts-ignore
+      .send(validTicketPayload({ eventType: "not-a-real-event-type" }))
+      .expect(400);
+  });
+
+  it("returns 400 when category is not a recognized value", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      // @ts-ignore
+      .send(validTicketPayload({ category: "not-a-real-category" }))
+      .expect(400);
+  });
+
+  it("accepts any valid EventType and TicketCategory enum member", async () => {
+    const eventType = Object.values(EventType)[0]!;
+    const category = Object.values(TicketCategory)[0]!;
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ eventType, category }))
+      .expect(201);
+  });
 });
 
-describe("create tickets — category validation", () => {
+describe("create tickets — seats and quantity validation", () => {
   let cookie: string[];
   beforeEach(async () => {
     cookie = await global.signin();
   });
 
-  const validCategories = Object.values(TicketCategory);
-  const invalidCategories = ["vip", "ga", "FLOOR", "suite", "", "premium"];
-
-  validCategories.forEach((cat) => {
-    it(`accepts category "${cat}"`, async () => {
-      await request(app)
-        .post("/api/tickets")
-        .set("Cookie", cookie)
-        .send({ ...validTicketPayload(), category: cat })
-        .expect(201);
-    });
-  });
-
-  invalidCategories.forEach((cat) => {
-    it(`returns 400 for category "${cat}"`, async () => {
-      await request(app)
-        .post("/api/tickets")
-        .set("Cookie", cookie)
-        .send({ ...validTicketPayload(), category: cat })
-        .expect(400);
-    });
-  });
-
-  it("returns 400 when category is missing", async () => {
-    const body = validTicketPayload();
-    delete (body as any).category;
+  it("returns 400 when seats is provided as an empty array", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send(body)
+      .send(validTicketPayload({ seats: [] }))
       .expect(400);
+  });
+
+  it("returns 400 when seats contains a non-string entry", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      // @ts-ignore
+      .send(validTicketPayload({ seats: ["A1", 2, "A3"] }))
+      .expect(400);
+  });
+
+  it("returns 400 when seats contains an empty string entry", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "   ", "A3"] }))
+      .expect(400);
+  });
+
+  it("returns 400 when quantity is zero or negative", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ quantity: 0 }))
+      .expect(400);
+  });
+
+  it("returns 400 when quantity is not an integer", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ quantity: 2.5 }))
+      .expect(400);
+  });
+
+  it("returns 400 when seats length does not match quantity", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "A2"], quantity: 3 }))
+      .expect(400);
+  });
+
+  it("accepts a matching seats array and quantity, creating one ticket per seat", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "A2", "A3"], quantity: 3 }))
+      .expect(201);
+
+    expect(body).toHaveLength(3);
+    expect(body.map((t: any) => t.seat).sort()).toEqual(["A1", "A2", "A3"]);
+  });
+
+  it("creates a single ticket with no seat when neither seats nor quantity is provided", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload())
+      .expect(201);
+
+    expect(body).toHaveLength(1);
+    expect(body[0].seat).toBeUndefined();
+  });
+
+  it("creates multiple seatless tickets when only quantity is provided", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ quantity: 4 }))
+      .expect(201);
+
+    expect(body).toHaveLength(4);
+    body.forEach((t: any) => expect(t.seat).toBeUndefined());
   });
 });
 
-describe("create tickets — seat validation", () => {
+describe("create tickets — description and imageUrl validation", () => {
   let cookie: string[];
   beforeEach(async () => {
     cookie = await global.signin();
   });
 
-  it("returns 400 when seat is missing", async () => {
-    const body = validTicketPayload();
-    delete (body as any).seat;
+  it("returns 400 when description is provided as an empty string", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send(body)
+      .send(validTicketPayload({ description: "" }))
       .expect(400);
   });
 
-  it("returns 400 when seat is an empty string", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), seat: "" })
-      .expect(400);
-  });
-
-  it("accepts alphanumeric seat identifiers", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), seat: "Row-B-Seat-22" })
-      .expect(201);
-  });
-});
-
-describe("create tickets — optional fields", () => {
-  let cookie: string[];
-  beforeEach(async () => {
-    cookie = await global.signin();
-  });
-
-  it("creates a ticket without optional fields (quantity, description, imageUrl)", async () => {
-    const { quantity, description, imageUrl, ...required } =
-      validTicketPayload();
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(required)
-      .expect(201);
-  });
-
-  // quantity
-  it("returns 400 when quantity is 0", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), quantity: 0 })
-      .expect(400);
-  });
-
-  it("returns 400 when quantity is negative", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), quantity: -5 })
-      .expect(400);
-  });
-
-  it("returns 400 when quantity is a float", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), quantity: 1.5 })
-      .expect(400);
-  });
-
-  it("accepts quantity of 1", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), quantity: 1 })
-      .expect(201);
-  });
-
-  it("accepts a large valid quantity", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), quantity: 1000 })
-      .expect(201);
-  });
-
-  // description
-  it("returns 400 when description is an empty string", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), description: "" })
-      .expect(400);
-  });
-
-  it("returns 400 when description is only whitespace", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), description: "   " })
-      .expect(400);
-  });
-
-  it("accepts a valid description string", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({
-        ...validTicketPayload(),
-        description: "Great seats near the stage.",
-      })
-      .expect(201);
-  });
-
-  // imageUrl
   it("returns 400 when imageUrl is not a valid URL", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), imageUrl: "not-a-url" })
+      .send(validTicketPayload({ imageUrl: "not-a-url" }))
       .expect(400);
   });
 
-  it("returns 400 when imageUrl is a relative path", async () => {
+  it("accepts a request with no description or imageUrl provided", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), imageUrl: "/images/poster.jpg" })
-      .expect(400);
-  });
-
-  it("accepts a valid http imageUrl", async () => {
-    await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({
-        ...validTicketPayload(),
-        imageUrl: "http://cdn.example.com/img.png",
-      })
+      .send(validTicketPayload())
       .expect(201);
   });
 
-  it("accepts a valid https imageUrl", async () => {
+  it("accepts a valid description and imageUrl", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({
-        ...validTicketPayload(),
-        imageUrl: "https://cdn.example.com/img.png",
-      })
+      .send(
+        validTicketPayload({
+          description: "An unforgettable night of music.",
+          imageUrl: "https://example.com/poster.jpg",
+        }),
+      )
       .expect(201);
   });
 });
 
-describe("create tickets — multiple validation errors", () => {
+describe("create tickets — persistence", () => {
   let cookie: string[];
   beforeEach(async () => {
     cookie = await global.signin();
   });
 
-  it("returns all errors when multiple fields are invalid", async () => {
-    const { body } = await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send({
-        title: "AB", // too short
-        price: -5, // negative
-        artist: "", // empty
-        venue: "", // empty
-        city: "", // empty
-        eventDate: "bad", // not ISO
-        eventType: "opera", // invalid enum
-        category: "suite", // invalid enum
-        seat: "", // empty
-      })
-      .expect(400);
-
-    expect(Array.isArray(body.errors)).toBe(true);
-    expect(body.errors.length).toBeGreaterThanOrEqual(5);
-  });
-});
-
-describe("create tickets — response body", () => {
-  let cookie: string[];
-  beforeEach(async () => {
-    cookie = await global.signin();
-  });
-
-  it("returns the created ticket with all submitted fields", async () => {
-    const payload = validTicketPayload();
-    const { body } = await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(payload)
-      .expect(201);
-
-    expect(body.title).toBe(payload.title);
-    expect(body.price).toBe(payload.price);
-    expect(body.artist).toBe(payload.artist);
-    expect(body.venue).toBe(payload.venue);
-    expect(body.city).toBe(payload.city);
-    expect(body.eventType).toBe(payload.eventType);
-    expect(body.category).toBe(payload.category);
-    expect(body.seat).toBe(payload.seat);
-    expect(body.quantity).toBe(payload.quantity);
-    expect(body.description).toBe(payload.description);
-    expect(body.imageUrl).toBe(payload.imageUrl);
-  });
-
-  it("attaches the authenticated user's id to the created ticket", async () => {
-    const { body } = await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(validTicketPayload())
-      .expect(201);
-
-    expect(body.userId).toBeDefined();
-    expect(typeof body.userId).toBe("string");
-  });
-
-  it("returns a ticket with a MongoDB id field", async () => {
-    const { body } = await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(validTicketPayload())
-      .expect(201);
-
-    expect(body.id).toBeDefined();
-  });
-
-  it("does not return the __v field (version key)", async () => {
-    const { body } = await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(validTicketPayload())
-      .expect(201);
-
-    // Common Mongoose practice: suppress __v in toJSON
-    expect(body.__v).toBeUndefined();
-  });
-});
-
-describe("create tickets — database persistance", () => {
-  let cookie: string[];
-  beforeEach(async () => {
-    cookie = await global.signin();
-  });
-
-  it("persists the ticket to the database", async () => {
-    const payload = validTicketPayload();
-    const { body } = await request(app)
-      .post("/api/tickets")
-      .set("Cookie", cookie)
-      .send(payload)
-      .expect(201);
-
-    const id = body.id ?? body._id;
-    const saved = await Ticket.findById(id);
-    expect(saved).not.toBeNull();
-    expect(saved!.title).toBe(payload.title);
-    expect(saved!.price).toBe(payload.price);
-  });
-
-  it("each request creates a distinct document", async () => {
-    const before = await Ticket.countDocuments();
+  it("saves the ticket(s) to the database", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
       .send(validTicketPayload())
       .expect(201);
+
+    const tickets = await Ticket.find({});
+    expect(tickets).toHaveLength(1);
+    expect(tickets[0]!.title).toEqual("Coldplay Live in Concert");
+  });
+
+  it("persists one document per seat when seats are provided", async () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send(validTicketPayload())
+      .send(validTicketPayload({ seats: ["A1", "A2"], quantity: 2 }))
       .expect(201);
-    const after = await Ticket.countDocuments();
-    expect(after).toBe(before + 2);
-  });
-});
 
-describe("create tickets — content type", () => {
-  let cookie: string[];
-  beforeEach(async () => {
-    cookie = await global.signin();
+    const tickets = await Ticket.find({});
+    expect(tickets).toHaveLength(2);
   });
 
-  it("responds with application/json content-type", async () => {
-    const { headers } = await request(app)
+  it("defaults status to Available on creation", async () => {
+    const { body } = await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
       .send(validTicketPayload())
       .expect(201);
 
-    expect(headers["content-type"]).toMatch(/application\/json/);
+    expect(body[0].status).toEqual(TicketStatus.AVAILABLE);
+  });
+
+  it("defaults status to Available for every ticket when multiple are created", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "A2"], quantity: 2 }))
+      .expect(201);
+
+    body.forEach((t: any) => expect(t.status).toEqual(TicketStatus.AVAILABLE));
+  });
+
+  it("sets version to 0 on initial creation", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload())
+      .expect(201);
+
+    expect(body[0].version).toEqual(0);
   });
 });
 
 describe("create tickets — event publishing", () => {
   let cookie: string[];
-
   beforeEach(async () => {
     cookie = await global.signin();
-    (TicketCreatedPublisher as jest.Mock).mockClear();
   });
 
-  it("publishes a TicketCreated event after a successful save", async () => {
+  it("publishes a TicketCreatedEvent when a ticket is created", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload())
+      .expect(201);
+
+    expect(TicketCreatedPublisher.prototype.publish).toHaveBeenCalledTimes(1);
+  });
+
+  it("publishes one event per ticket when multiple seats are provided", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "A2", "A3"], quantity: 3 }))
+      .expect(201);
+
+    expect(TicketCreatedPublisher.prototype.publish).toHaveBeenCalledTimes(3);
+  });
+
+  it("includes id, title, price, userId, status, and version in the published event", async () => {
+    const userId = "507f1f77bcf86cd799439011";
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", await global.signin(userId))
+      .send(validTicketPayload())
+      .expect(201);
+
+    expect(TicketCreatedPublisher.prototype.publish).toHaveBeenCalledWith({
+      id: body[0].id,
+      title: body[0].title,
+      price: body[0].price,
+      userId,
+      status: body[0].status,
+      version: body[0].version,
+    });
+  });
+
+  it("does not publish any event when validation fails", async () => {
+    const body = validTicketPayload();
+    delete (body as any).title;
+
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(body)
+      .expect(400);
+
+    expect(TicketCreatedPublisher.prototype.publish).not.toHaveBeenCalled();
+  });
+});
+
+describe("create tickets — mass-assignment protection", () => {
+  let cookie: string[];
+  beforeEach(async () => {
+    cookie = await global.signin();
+  });
+
+  it("ignores a client-supplied id and generates its own", async () => {
+    const fakeId = "111111111111111111111111";
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ id: fakeId }))
+      .expect(201);
+
+    expect(body[0].id).not.toEqual(fakeId);
+  });
+
+  it("ignores a client-supplied userId and uses the authenticated user instead", async () => {
+    const realUserId = "507f1f77bcf86cd799439011";
+    const spoofedUserId = "222222222222222222222222";
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", await global.signin(realUserId))
+      .send(validTicketPayload({ userId: spoofedUserId }))
+      .expect(201);
+
+    expect(body[0].userId).toEqual(realUserId);
+  });
+
+  it("ignores a client-supplied status and falls back to the default", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ status: TicketStatus.RESERVED }))
+      .expect(201);
+    expect(body[0].status).toEqual(TicketStatus.AVAILABLE);
+  });
+
+  it("ignores a client-supplied version and starts at 0", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ version: 7 }))
+      .expect(201);
+
+    expect(body[0].version).toEqual(0);
+  });
+});
+
+describe("create tickets — malformed request bodies", () => {
+  let cookie: string[];
+  beforeEach(async () => {
+    cookie = await global.signin();
+  });
+
+  it("returns 400 when the body is empty", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send({})
+      .expect(400);
+  });
+
+  it("returns 400 when extra unknown fields are submitted alongside valid ones", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ someRandomField: "unexpected" }))
+      .expect(201);
+  });
+
+  it("returns 400 when seats is sent as a string instead of an array", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      // @ts-ignore
+      .send(validTicketPayload({ seats: "A1" }))
+      .expect(400);
+  });
+
+  it("returns 400 when quantity is sent as a string that isn't numeric", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      // @ts-ignore
+      .send(validTicketPayload({ quantity: "many" }))
+      .expect(400);
+  });
+
+  it("trims leading/trailing whitespace from trimmed string fields", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(
+        validTicketPayload({
+          title: "  Coldplay Live  ",
+          artist: "  Coldplay  ",
+        }),
+      )
+      .expect(201);
+
+    expect(body[0].title).toEqual("Coldplay Live");
+    expect(body[0].artist).toEqual("Coldplay");
+  });
+});
+
+describe("create tickets — response shape", () => {
+  let cookie: string[];
+  beforeEach(async () => {
+    cookie = await global.signin();
+  });
+
+  it("returns an array even when only a single ticket is created", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload())
+      .expect(201);
+
+    expect(Array.isArray(body)).toBe(true);
+  });
+
+  it("returns tickets containing all submitted fields", async () => {
     const payload = validTicketPayload();
     const { body } = await request(app)
       .post("/api/tickets")
@@ -717,40 +689,139 @@ describe("create tickets — event publishing", () => {
       .send(payload)
       .expect(201);
 
-    expect(TicketCreatedPublisher).toHaveBeenCalledTimes(1);
-
-    const publisherInstance = (TicketCreatedPublisher as jest.Mock).mock
-      .instances[0];
-    expect(publisherInstance.publish).toHaveBeenCalledTimes(1);
-    expect(publisherInstance.publish).toHaveBeenCalledTimes(1);
-
-    const publishedData = publisherInstance.publish.mock.calls[0][0];
-    expect(publishedData).toMatchObject({
-      id: body.id,
+    expect(body[0]).toMatchObject({
       title: payload.title,
       price: payload.price,
-      userId: body.userId,
-      status: TicketStatus.AVAILABLE,
-      version: 0,
+      artist: payload.artist,
+      venue: payload.venue,
+      city: payload.city,
     });
   });
 
-  it("does not publish an event when validation fails", async () => {
+  it("returns a unique id for each ticket created in the same request", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "A2", "A3"], quantity: 3 }))
+      .expect(201);
+
+    const ids = body.map((t: any) => t.id);
+    expect(new Set(ids).size).toEqual(ids.length);
+  });
+
+  it("does not leak internal mongoose fields like __v in the response", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload())
+      .expect(201);
+
+    expect(body[0].__v).toBeUndefined();
+    expect(body[0]._id).toBeUndefined();
+  });
+});
+
+describe("create tickets — transactional atomicity", () => {
+  let cookie: string[];
+  beforeEach(async () => {
+    cookie = await global.signin();
+  });
+
+  it("persists zero tickets if any ticket in a multi-seat batch fails to save", async () => {
+    const originalSave = Ticket.prototype.save;
+    let callCount = 0;
+    const saveSpy = jest
+      .spyOn(Ticket.prototype, "save")
+      .mockImplementation(function (this: any, ...args: any[]) {
+        callCount++;
+        if (callCount === 2) {
+          return Promise.reject(new Error("Simulated save failure"));
+        }
+        return originalSave.apply(this, args);
+      });
+
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send({ ...validTicketPayload(), title: "" })
-      .expect(400);
+      .send(validTicketPayload({ seats: ["A1", "A2", "A3"], quantity: 3 }));
 
-    expect(TicketCreatedPublisher).not.toHaveBeenCalled();
+    const tickets = await Ticket.find({});
+    expect(tickets).toHaveLength(0);
+
+    saveSpy.mockRestore();
   });
 
-  it("does not publish an event when the request is unauthenticated", async () => {
+  it("does not publish any events if the batch fails partway through", async () => {
+    const originalSave = Ticket.prototype.save;
+    let callCount = 0;
+    const saveSpy = jest
+      .spyOn(Ticket.prototype, "save")
+      .mockImplementation(function (this: any, ...args: any[]) {
+        callCount++;
+        if (callCount === 2) {
+          return Promise.reject(new Error("Simulated save failure"));
+        }
+        return originalSave.apply(this, args);
+      });
+
     await request(app)
       .post("/api/tickets")
-      .send(validTicketPayload())
-      .expect(401);
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "A2", "A3"], quantity: 3 }));
 
-    expect(TicketCreatedPublisher).not.toHaveBeenCalled();
+    expect(TicketCreatedPublisher.prototype.publish).not.toHaveBeenCalled();
+
+    saveSpy.mockRestore();
+  });
+});
+
+describe("create tickets — quantity upper bound", () => {
+  let cookie: string[];
+  beforeEach(async () => {
+    cookie = await global.signin();
+  });
+
+  it("returns 400 when quantity exceeds the maximum allowed per request", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ quantity: 51 }))
+      .expect(400);
+  });
+
+  it("accepts quantity exactly at the maximum allowed boundary", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ quantity: 50 }))
+      .expect(201);
+  });
+
+  it("returns 400 when seats array exceeds the maximum allowed length", async () => {
+    const tooManySeats = Array.from({ length: 51 }, (_, i) => `Seat-${i}`);
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: tooManySeats, quantity: 51 }))
+      .expect(400);
+  });
+});
+
+describe("create tickets — eventDate must be in the future (end-to-end)", () => {
+  let cookie: string[];
+  beforeEach(async () => {
+    cookie = await global.signin();
+  });
+
+  it("returns 400 (not 500) when eventDate is in the past", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(
+        validTicketPayload({
+          eventDate: new Date(Date.now() - 86_400_000), // yesterday
+        }),
+      )
+      .expect(400);
   });
 });

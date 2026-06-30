@@ -15,12 +15,14 @@ router.get(
   requireAuth,
   async (req: Request, res: Response) => {
     const { orderId } = req.params;
-    if (orderId === undefined || Array.isArray(orderId)) {
+    if (
+      orderId === undefined ||
+      Array.isArray(orderId) ||
+      !mongoose.Types.ObjectId.isValid(orderId)
+    ) {
       throw new BadRequestError("Invalid ID");
     }
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      throw new NotFoundError();
-    }
+
     const order = await Order.findById(orderId).populate("ticket");
     if (!order) {
       throw new NotFoundError();

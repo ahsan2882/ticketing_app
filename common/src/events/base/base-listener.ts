@@ -11,7 +11,7 @@ export abstract class Listener<TEvent extends Event<any>> {
 
   private readonly jsonCodec = JSONCodec<Event<TEvent["data"]>>();
 
-  protected constructor(private readonly client: NatsConnection) {}
+  protected constructor(protected readonly client: NatsConnection) {}
 
   async listen(): Promise<void> {
     //   jetstream manager
