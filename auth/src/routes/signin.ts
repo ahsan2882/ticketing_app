@@ -15,17 +15,17 @@ router.post(
     body("password")
       .notEmpty()
       .withMessage("Password is required")
-      .custom((value, { req }) => {
-        // Validate length without trimming - use exact input value from req.body
-        const password = (req.body as any).password;
-        if (password.length < 1 || password.length > 50) {
+      .bail()
+      .custom((value) => {
+        // Validate length without trimming - use exact input value directly
+        if (value.length < 1 || value.length > 50) {
           throw new BadRequestError(
             "Password must be between 1 and 50 characters",
             "credentials",
           );
         }
         // Reject passwords that are only whitespace
-        if (/^\s*$/.test(password)) {
+        if (/^\s*$/.test(value)) {
           throw new BadRequestError(
             "Password cannot contain only whitespace characters",
             "credentials",

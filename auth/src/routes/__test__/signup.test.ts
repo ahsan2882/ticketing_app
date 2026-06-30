@@ -1,7 +1,7 @@
 import request from "supertest";
 import { app } from "../../app";
 
-describe("signup flow - ", () => {
+describe("signup flow tests", () => {
   it("returns 201 on successful signup", async () => {
     await request(app)
       .post("/api/users/signup")
@@ -437,15 +437,15 @@ describe("signup flow - ", () => {
       .expect(400);
   });
 
-  it("fails when signup uses trimmed version of a non-trimmed stored password", async () => {
+  it("fails when signup uses an email that already exists", async () => {
     // First register with whitespace-padded password
     await request(app)
       .post("/api/users/signup")
       .send({ email: "trimcheck2@test.com", password: "  abcd  ", name: "Test Test" })
       .expect(201);
 
-    // Try to register another user with trimmed version of the same credentials
-    // This should fail because first user already has whitespace version stored
+    // Try to register another user with the same email (trimmed version of password)
+    // This should fail because first user already exists with this email
     await request(app)
       .post("/api/users/signup")
       .send({ email: "trimcheck2@test.com", password: "abcd", name: "Test Test" })
