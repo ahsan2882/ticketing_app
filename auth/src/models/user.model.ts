@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema(
     toJSON: {
       transform(doc, ret) {
         const { _id, email, name } = ret;
-        return { id: _id, email, name };
+        return { id: _id.toString(), email, name };
       },
     },
     versionKey: false,

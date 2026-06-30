@@ -12,6 +12,27 @@ spec:
       labels:
         app: tickets
     spec:
+      initContainers:
+        - name: wait-for-nats
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z nats-srv 4222; do
+                echo "Waiting for nats..."
+                sleep 2
+              done
+        - name: wait-for-tickets-mongo
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z tickets-mongo-srv 27017; do
+                echo "Waiting for tickets-mongo..."
+                sleep 2
+              done
       containers:
         - name: tickets
           image: ahsan2882/tickets
@@ -27,6 +48,26 @@ spec:
               value: "development"
             - name: TICKETS_MONGO_URI
               value: "mongodb://tickets-mongo-srv:27017/tickets"
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
 ---
 apiVersion: v1
 kind: Service

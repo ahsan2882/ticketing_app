@@ -70,6 +70,15 @@ describe("signin flow - ", () => {
       .expect(400);
   });
 
+  it("returns 400 when password is sent as a non-string value", async () => {
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: 123456 })
+      .expect((res) => {
+        expect(res.status).toBe(400);
+      });
+  });
+
   it("returns errors array in the response body on 400", async () => {
     const response = await request(app)
       .post("/api/users/signin")
@@ -165,13 +174,32 @@ describe("signin flow - ", () => {
       .expect(400);
   });
 
-  it("trims whitespace from password before comparing — succeeds with padded correct password", async () => {
-    await global.signin("test@test.com", "validpass");
+  it("does not trim whitespace from password — fails with padded wrong password (exact match required)", async () => {
+    // A password stored without whitespace should not match one typed with surrounding whitespace
+    await global.signin("signin-test@test.com", "validpass");
 
+    // Trying to signin with the same credentials but surrounded by whitespace should fail
+    // because we preserve the exact input value, not trim it
     await request(app)
       .post("/api/users/signin")
-      .send({ email: "test@test.com", password: "  validpass  " })
+      .send({ email: "signin-test@test.com", password: "  validpass  " })
+      .expect(400);
+  });
+
+  it("succeeds with exact password input including trailing whitespace (not trimmed)", async () => {
+    // First register a user with a password that has trailing whitespace
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trailing-whitespace@test.com", password: "validpass ", name: "Test Test" })
+      .expect(201);
+
+    // Signin with EXACT same password including trailing whitespace succeeds
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "trailing-whitespace@test.com", password: "validpass " })
       .expect(200);
+
+    expect(response.body.email).toBe("trailing-whitespace@test.com");
   });
 
   it("sets a cookie after successful signin", async () => {
@@ -201,6 +229,24 @@ describe("signin flow - ", () => {
 
     expect(payload).toHaveProperty("email", "payload@test.com");
     expect(payload).toHaveProperty("id");
+  });
+
+  it("JWT payload contains the correct name", async () => {
+    const cookie = await global.signin(
+      "namecheck@test.com",
+      "validpass",
+      "Name Check",
+    );
+
+    const sessionData = cookie[0]!.split(";")[0]!.split("=")[1]!;
+    const { jwt: token } = JSON.parse(
+      Buffer.from(sessionData, "base64").toString(),
+    );
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString(),
+    );
+
+    expect(payload).toHaveProperty("name", "Name Check");
   });
 
   it("JWT has an expiry (exp claim) set", async () => {

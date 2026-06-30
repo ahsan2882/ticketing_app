@@ -1,7 +1,7 @@
 import request from "supertest";
 import { app } from "../../app";
 
-describe("signup flow - ", () => {
+describe("signup flow tests", () => {
   it("returns 201 on successful signup", async () => {
     await request(app)
       .post("/api/users/signup")
@@ -114,12 +114,23 @@ describe("signup flow - ", () => {
       .expect(400);
   });
 
-  it("trims whitespace from password before length validation", async () => {
-    // A password of all spaces should fail after trimming
+  it("fails when password is all spaces", async () => {
+    // A password of all spaces should fail - not trimmed
     await request(app)
       .post("/api/users/signup")
       .send({ email: "test@test.com", password: "     ", name: "Test Test" })
       .expect(400);
+  });
+
+  it("succeeds when password meets the min length and has surrounding whitespace (whitespace is preserved, not trimmed)", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "trimboundary@test.com",
+        password: "  abcd  ",
+        name: "Test Test",
+      })
+      .expect(201);
   });
 
   it("returns 400 for email without TLD", async () => {
@@ -155,6 +166,28 @@ describe("signup flow - ", () => {
       .post("/api/users/signup")
       .send({ email: "test@@test.com", password: "test", name: "Test Test" })
       .expect(400);
+  });
+
+  it("rejects emails with leading/trailing whitespace (no normalization, must be exact)", async () => {
+    // Emails must not have surrounding whitespace - the validator regex
+    // /[^\s@]+/ explicitly rejects spaces, and there is no .trim() in the chain
+    await request(app).post("/api/users/signup").send({
+      email: "  whitespace@test.com  ",
+      password: "test",
+      name: "Test Test",
+    }).expect(400);
+
+    // Verify the error message references the email validation issue
+    const response = await request(app).post("/api/users/signup").send({
+      email: "  whitespace@test.com  ",
+      password: "test",
+      name: "Test Test",
+    });
+
+    expect(response.status).toBe(400);
+    const messages = response.body.errors.map((e: { message: string }) => e.message);
+    // Email validation errors typically reference email format issues
+    expect(messages.some(m => m.includes("Please provide a valid email") || m.includes("invalid"))).toBe(true);
   });
 
   it("treats emails as case-insensitive for duplicate check", async () => {
@@ -232,6 +265,68 @@ describe("signup flow - ", () => {
     expect(response.body.errors.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("returns 400 when first or last name is a single character", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "shortname@test.com", password: "test", name: "A Test" })
+      .expect(400);
+  });
+
+  it("returns 400 for a name with a middle name (more than two words)", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "middlename@test.com",
+        password: "test",
+        name: "Test Middle Test",
+      })
+      .expect(400);
+  });
+
+  it("returns 400 for a name containing non-letter characters", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "hyphenname@test.com",
+        password: "test",
+        name: "O'Brien Smith",
+      })
+      .expect(400);
+  });
+
+  it("returns 400 for a name containing digits", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "digitname@test.com",
+        password: "test",
+        name: "Test1 Test2",
+      })
+      .expect(400);
+  });
+
+  it("succeeds when name has leading/trailing whitespace that gets trimmed", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "trimname@test.com",
+        password: "test",
+        name: "  Test Test  ",
+      })
+      .expect(201);
+  });
+
+  it("returns 400 when name has more than one space between words", async () => {
+    await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "doublespace@test.com",
+        password: "test",
+        name: "Test  Test",
+      })
+      .expect(400);
+  });
+
   it("cookie contains a valid JWT after signup", async () => {
     const response = await request(app)
       .post("/api/users/signup")
@@ -248,6 +343,30 @@ describe("signup flow - ", () => {
       const decoded = JSON.parse(Buffer.from(sessionData, "base64").toString());
       expect(decoded).toHaveProperty("jwt");
     }
+  });
+
+  it("JWT payload contains the correct email, id, and name after signup", async () => {
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "jwtpayload@test.com",
+        password: "test",
+        name: "Test Test",
+      })
+      .expect(201);
+
+    const cookies = response.get("Set-Cookie")!;
+    const sessionData = cookies[0]!.split(";")[0]!.split("=")[1]!;
+    const { jwt: token } = JSON.parse(
+      Buffer.from(sessionData, "base64").toString(),
+    );
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString(),
+    );
+
+    expect(payload).toHaveProperty("email", "jwtpayload@test.com");
+    expect(payload).toHaveProperty("name", "Test Test");
+    expect(payload).toHaveProperty("id", response.body.id);
   });
 
   it("does not set a cookie on failed signup", async () => {
@@ -288,6 +407,75 @@ describe("signup flow - ", () => {
     expect(response.headers["content-type"]).toMatch(/json/);
   });
 
+  it("preserves password whitespace consistently - signup and signin use exact input values", async () => {
+    // Register a user with password that has surrounding whitespace
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "whitespace@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(201);
+
+    // Sign in with the EXACT same password including whitespace (not trimmed)
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "whitespace@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(200);
+
+    expect(response.body.email).toBe("whitespace@test.com");
+  });
+
+  it("fails when signin uses trimmed version of a non-trimmed stored password", async () => {
+    // Register with whitespace-padded password
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(201);
+
+    // Try to sign in with trimmed version - should fail because stored password has whitespace
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "trimcheck@test.com", password: "abcd" })
+      .expect(400);
+  });
+
+  it("fails when signup uses an email that already exists", async () => {
+    // First register with whitespace-padded password
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck2@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(201);
+
+    // Try to register another user with the same email (trimmed version of password)
+    // This should fail because first user already exists with this email
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck2@test.com", password: "abcd", name: "Test Test" })
+      .expect(400);
+
+    // Verify errors contain user-already-exists message
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck2@test.com", password: "abcd", name: "Test Test" })
+      .expect(400);
+    expect(response.body.errors.some(e => e.message.includes("User with this email already exists"))).toBe(true);
+  });
+
+  it("preserves trailing whitespace in password across signup and signin paths", async () => {
+    // Test that a password with trailing whitespace is preserved exactly (not trimmed)
+    const email = "whitespace-trailing@test.com";
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email, password: "abcd ", name: "Test Test" })
+      .expect(201);
+
+    // Sign in must use exact same input as signup (no trimming applied either way)
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email, password: "abcd " })
+      .expect(200);
+
+    expect(response.body.email).toBe(email);
+  });
+
   it("can register multiple distinct users independently", async () => {
     await request(app)
       .post("/api/users/signup")
@@ -303,5 +491,15 @@ describe("signup flow - ", () => {
       .post("/api/users/signup")
       .send({ email: "user3@test.com", password: "pass3", name: "Test Test" })
       .expect(201);
+  });
+
+  it("returns 405 for GET /api/users/signup (only POST is registered)", async () => {
+    const response = await request(app).get("/api/users/signup");
+    expect(response.status).toEqual(405);
+  });
+
+  it("returns 405 for DELETE /api/users/signup (only POST is registered)", async () => {
+    const response = await request(app).delete("/api/users/signup");
+    expect(response.status).toEqual(405);
   });
 });

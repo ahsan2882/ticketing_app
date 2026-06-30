@@ -11,6 +11,7 @@ const createTicket = async (
     userId: new mongoose.Types.ObjectId().toHexString(),
     title: overrides.title ?? "Concert Ticket",
     price: overrides.price ?? 25,
+    id: new mongoose.Types.ObjectId().toHexString(),
   });
   await ticket.save();
   return ticket;
@@ -59,18 +60,18 @@ describe("find order - not found", () => {
       .expect(404);
   });
 
-  it("returns 404 for null orderId", async () => {
+  it("returns 400 when the literal string 'null' is used as orderId", async () => {
     await request(app)
       .get(`/api/orders/${null}`)
       .set("Cookie", await global.signin())
-      .expect(404);
+      .expect(400);
   });
 
-  it("returns 404 for malformed ObjectId string", async () => {
+  it("returns 400 for malformed ObjectId string", async () => {
     await request(app)
       .get(`/api/orders/not-an-objectid`)
       .set("Cookie", await global.signin())
-      .expect(404);
+      .expect(400);
   });
 });
 
@@ -80,6 +81,7 @@ describe("find order - authorization / ownership", () => {
       title: "test",
       price: 100,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 
@@ -125,6 +127,7 @@ describe("find order - authorization / ownership", () => {
       title: "test",
       price: 100,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 
@@ -151,6 +154,7 @@ describe("find order - authorization / ownership", () => {
       title: "test",
       price: 100,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 
@@ -212,6 +216,7 @@ describe("find order - success response", () => {
       title: "Concert 2026",
       price: 120,
       userId: new mongoose.Types.ObjectId().toHexString(),
+      id: new mongoose.Types.ObjectId().toHexString(),
     });
     await ticket.save();
 
@@ -271,7 +276,7 @@ describe("find order - success response", () => {
     expect(body.expiresAt).toBeDefined();
   });
 
-  it("returns a version key (__v / version) consistent with optimistic concurrency setup", async () => {
+  it("returns a version field (not __v) consistent with the versionKey: 'version' setup", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const cookie = await global.signin(userId);
     const ticket = await createTicket();
@@ -284,19 +289,63 @@ describe("find order - success response", () => {
       .expect(200);
 
     expect(body).not.toHaveProperty("__v");
+    expect(body).toHaveProperty("version");
+    expect(typeof body.version).toBe("number");
+  });
+
+  it("includes a valid createdAt timestamp close to when the order was created", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const cookie = await global.signin(userId);
+    const ticket = await createTicket();
+
+    const beforeCreate = Date.now();
+    const order = await createOrder(userId, ticket);
+    const afterCreate = Date.now();
+
+    const { body } = await request(app)
+      .get(`/api/orders/${order.id}`)
+      .set("Cookie", cookie)
+      .send()
+      .expect(200);
+
+    expect(body.createdAt).toBeDefined();
+    const createdAtMs = new Date(body.createdAt).getTime();
+    expect(createdAtMs).toBeGreaterThanOrEqual(beforeCreate);
+    expect(createdAtMs).toBeLessThanOrEqual(afterCreate);
+  });
+
+  it("accepts a valid ObjectId with uppercase hex characters", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const cookie = await global.signin(userId);
+    const ticket = await createTicket();
+    const order = await createOrder(userId, ticket);
+
+    // order.id from Mongoose is already lowercase hex; re-cast to confirm
+    // the route doesn't care about case, only validity.
+    const uppercased = order.id.toUpperCase();
+
+    const response = await request(app)
+      .get(`/api/orders/${uppercased}`)
+      .set("Cookie", cookie)
+      .send();
+
+    // MongoDB's ObjectId lookup is itself case-insensitive on valid hex,
+    // so this should resolve to the same order rather than 404.
+    expect(response.status).toBe(200);
+    expect(response.body.id).toEqual(order.id);
   });
 });
 
 describe("find order - edge cases", () => {
-  it("returns 404 for a valid ObjectId that has valid hex but wrong length padding tricks", async () => {
+  it("returns 400 for a valid ObjectId that has valid hex but wrong length padding tricks", async () => {
     const cookie = await global.signin();
 
-    // 24 hex chars is valid; this is 23 chars, should fail validity check -> 404
+    // 24 hex chars is valid; this is 23 chars, should fail validity check -> 400
     await request(app)
       .get("/api/orders/abcdef1234567890abcdef")
       .set("Cookie", cookie)
       .send()
-      .expect(404);
+      .expect(400);
   });
 
   it("two different signed-in users cannot view each other's orders", async () => {

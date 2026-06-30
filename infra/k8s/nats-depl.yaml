@@ -48,6 +48,25 @@ spec:
               mountPath: /etc/nats
             - name: nats-storage
               mountPath: /data/nats
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            initialDelaySeconds: 15
+            periodSeconds: 10
       volumes:
         - name: nats-config
           configMap:

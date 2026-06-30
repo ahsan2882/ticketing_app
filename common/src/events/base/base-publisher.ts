@@ -10,7 +10,7 @@ export abstract class Publisher<TEvent extends Event<any>> {
   abstract readonly subject: TEvent["subject"];
   private readonly jsonCodec = JSONCodec<TEvent>();
 
-  protected constructor(private readonly client: NatsConnection) {}
+  protected constructor(protected readonly client: NatsConnection) {}
 
   async publish(data: TEvent["data"]): Promise<PubAck> {
     const jetStreamClient: JetStreamClient = this.client.jetstream();

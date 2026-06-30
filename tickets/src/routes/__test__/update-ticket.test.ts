@@ -21,10 +21,8 @@ const buildTicket = async (
     eventType: EventType.Concert,
     category: TicketCategory.STANDARD,
     seat: "A-1",
-    quantity: 1,
     description: "Original description",
     imageUrl: "https://example.com/original.jpg",
-    status: TicketStatus.AVAILABLE,
     ...overrides,
   });
 
@@ -81,28 +79,28 @@ describe("update ticket - authentication", () => {
 });
 
 describe("update ticket - ticket id validation", () => {
-  it("returns 404 when id is not a valid ObjectId", async () => {
+  it("returns 400 when id is not a valid ObjectId", async () => {
     await request(app)
       .patch("/api/tickets/not-valid-id")
       .set("Cookie", await global.signin())
       .send({ title: "Updated Title" })
-      .expect(404);
+      .expect(400);
   });
 
-  it("returns 404 when id is too short", async () => {
+  it("returns 400 when id is too short", async () => {
     await request(app)
       .patch("/api/tickets/123")
       .set("Cookie", await global.signin())
       .send({ title: "Updated Title" })
-      .expect(404);
+      .expect(400);
   });
 
-  it("returns 404 when id has special characters", async () => {
+  it("returns 400 when id has special characters", async () => {
     await request(app)
       .patch("/api/tickets/@@@###")
       .set("Cookie", await global.signin())
       .send({ title: "Updated Title" })
-      .expect(404);
+      .expect(400);
   });
 
   it("returns 404 when id is valid but ticket does not exist", async () => {
@@ -276,19 +274,6 @@ describe("update ticket - successful partial updates", () => {
     expect(response.body.seat).toEqual("Z-99");
   });
 
-  it("updates quantity", async () => {
-    const userId = new mongoose.Types.ObjectId().toHexString();
-    const ticket = await buildTicket({ userId });
-
-    const response = await request(app)
-      .patch(`/api/tickets/${ticket.id}`)
-      .set("Cookie", await global.signin(userId))
-      .send({ quantity: 10 })
-      .expect(200);
-
-    expect(response.body.quantity).toEqual(10);
-  });
-
   it("updates description", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const ticket = await buildTicket({ userId });
@@ -338,7 +323,6 @@ describe("update ticket - successful full update", () => {
       eventType: validUpdatePayload.eventType,
       category: validUpdatePayload.category,
       seat: validUpdatePayload.seat,
-      quantity: validUpdatePayload.quantity,
       description: validUpdatePayload.description,
       imageUrl: validUpdatePayload.imageUrl,
       userId,
@@ -365,7 +349,6 @@ describe("update ticket - successful full update", () => {
     expect(updatedTicket!.eventType).toEqual(validUpdatePayload.eventType);
     expect(updatedTicket!.category).toEqual(validUpdatePayload.category);
     expect(updatedTicket!.seat).toEqual(validUpdatePayload.seat);
-    expect(updatedTicket!.quantity).toEqual(validUpdatePayload.quantity);
     expect(updatedTicket!.description).toEqual(validUpdatePayload.description);
     expect(updatedTicket!.imageUrl).toEqual(validUpdatePayload.imageUrl);
   });
@@ -711,20 +694,6 @@ describe("update ticket - date, quantity, and URL validation", () => {
       .expect(400);
   });
 
-  it("returns 200 when quantity is 0", async () => {
-    const userId = new mongoose.Types.ObjectId().toHexString();
-    const ticket = await buildTicket({ userId });
-
-    const response = await request(app)
-      .patch(`/api/tickets/${ticket.id}`)
-      .set("Cookie", await global.signin(userId))
-      .send({ quantity: 0 })
-      .expect(200);
-    expect(response.body.quantity).toEqual(0);
-    const updatedTicket = await Ticket.findById(ticket.id);
-    expect(updatedTicket!.quantity).toEqual(0);
-  });
-
   it("returns 400 when quantity is negative", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const ticket = await buildTicket({ userId });
@@ -787,6 +756,8 @@ describe("update ticket - event publishing", () => {
       .send(validUpdatePayload)
       .expect(200);
 
+    const updatedTicket = await Ticket.findById(ticket.id);
+
     expect(TicketUpdatedPublisher).toHaveBeenCalledTimes(1);
 
     const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
@@ -799,7 +770,7 @@ describe("update ticket - event publishing", () => {
       userId,
       title: validUpdatePayload.title,
       price: validUpdatePayload.price,
-      version: 0,
+      version: updatedTicket?.version,
     });
   });
 
@@ -813,6 +784,8 @@ describe("update ticket - event publishing", () => {
       .send({ title: "Only Title Updated" })
       .expect(200);
 
+    const updatedTicket = await Ticket.findById(ticket.id);
+
     const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
       .instances[0];
     const publishedData = publisherInstance.publish.mock.calls[0][0];
@@ -823,7 +796,7 @@ describe("update ticket - event publishing", () => {
       title: "Only Title Updated",
       price: 100,
       status: TicketStatus.AVAILABLE,
-      version: 0,
+      version: updatedTicket?.version,
     });
   });
 
@@ -888,5 +861,242 @@ describe("update ticket - event publishing", () => {
       .expect(401);
 
     expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
+  });
+});
+
+describe("update ticket - reserved and sold status guard", () => {
+  it("returns 400 when the ticket is already RESERVED", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+    ticket.set({ status: TicketStatus.RESERVED });
+    await ticket.save();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(400);
+  });
+
+  it("returns 400 when the ticket is already SOLD", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+    ticket.set({ status: TicketStatus.SOLD });
+    await ticket.save();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(400);
+  });
+
+  it("does not modify the ticket when it is RESERVED", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+    ticket.set({ status: TicketStatus.RESERVED });
+    await ticket.save();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(400);
+
+    const unchangedTicket = await Ticket.findById(ticket.id);
+    expect(unchangedTicket!.price).toEqual(100);
+  });
+
+  it("does not modify the ticket when it is SOLD", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+    ticket.set({ status: TicketStatus.SOLD });
+    await ticket.save();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(400);
+
+    const unchangedTicket = await Ticket.findById(ticket.id);
+    expect(unchangedTicket!.price).toEqual(100);
+  });
+
+  it("does not publish an event when the ticket is RESERVED", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+    ticket.set({ status: TicketStatus.RESERVED });
+    await ticket.save();
+    (TicketUpdatedPublisher as jest.Mock).mockClear();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(400);
+
+    expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
+  });
+
+  it("does not publish an event when the ticket is SOLD", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+    ticket.set({ status: TicketStatus.SOLD });
+    await ticket.save();
+    (TicketUpdatedPublisher as jest.Mock).mockClear();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(400);
+
+    expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
+  });
+
+  it("allows updates again once the ticket returns to AVAILABLE", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+    ticket.set({ status: TicketStatus.RESERVED });
+    await ticket.save();
+    ticket.set({ status: TicketStatus.AVAILABLE });
+    await ticket.save();
+
+    const response = await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(200);
+
+    expect(response.body.price).toEqual(999);
+  });
+});
+
+describe("update ticket - ownership vs reservation check ordering", () => {
+  it("returns 401 (not 400) when a non-owner tries to update a RESERVED ticket they don't own", async () => {
+    const ownerId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId: ownerId });
+    ticket.set({ status: TicketStatus.RESERVED });
+    await ticket.save();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin())
+      .send({ price: 999 })
+      .expect(401);
+  });
+
+  it("still returns 400 for the actual owner when their own ticket is RESERVED", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+    ticket.set({ status: TicketStatus.RESERVED });
+    await ticket.save();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(400);
+  });
+});
+
+describe("update ticket - concurrent modification (VersionError)", () => {
+  it("returns 400 when the ticket was modified by another writer between read and save", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+
+    // Load a second, stale in-memory copy of the same ticket, simulating
+    // a concurrent listener/request that loaded the doc at the same version
+    const staleTicket = await Ticket.findById(ticket.id);
+
+    // First writer (e.g. a reservation listener) saves first, bumping version
+    staleTicket!.set({ price: 150 });
+    await staleTicket!.save();
+
+    // Mock findById to return the now-stale `ticket` instance so the route
+    // operates on outdated version data, forcing a VersionError on save
+    jest.spyOn(Ticket, "findById").mockResolvedValueOnce(ticket as any);
+
+    const response = await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 });
+
+    expect(response.status).toEqual(400);
+
+    (Ticket.findById as jest.Mock).mockRestore();
+  });
+
+  it("does not persist the conflicting update when a VersionError occurs", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+
+    const staleTicket = await Ticket.findById(ticket.id);
+    staleTicket!.set({ price: 150 });
+    await staleTicket!.save();
+
+    jest.spyOn(Ticket, "findById").mockResolvedValueOnce(ticket as any);
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 });
+
+    const finalTicket = await Ticket.findById(ticket.id);
+    expect(finalTicket!.price).toEqual(150);
+
+    (Ticket.findById as jest.Mock).mockRestore();
+  });
+
+  it("does not publish an event when a VersionError occurs", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+
+    const staleTicket = await Ticket.findById(ticket.id);
+    staleTicket!.set({ price: 150 });
+    await staleTicket!.save();
+
+    jest.spyOn(Ticket, "findById").mockResolvedValueOnce(ticket as any);
+    (TicketUpdatedPublisher as jest.Mock).mockClear();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 });
+
+    expect(TicketUpdatedPublisher).not.toHaveBeenCalled();
+
+    (Ticket.findById as jest.Mock).mockRestore();
+  });
+
+  it("succeeds normally when no concurrent modification occurs", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId, price: 100 });
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ price: 999 })
+      .expect(200);
+  });
+});
+
+describe("update ticket - status field mass-assignment protection", () => {
+  it("silently ignores a status field sent alongside a valid field, updating only the valid field", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+
+    const response = await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ title: "New Title", status: TicketStatus.RESERVED })
+      .expect(200);
+
+    expect(response.body.title).toEqual("New Title");
+    expect(response.body.status).toEqual(TicketStatus.AVAILABLE);
+
+    const updatedTicket = await Ticket.findById(ticket.id);
+    expect(updatedTicket!.status).toEqual(TicketStatus.AVAILABLE);
   });
 });

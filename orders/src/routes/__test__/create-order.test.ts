@@ -14,6 +14,7 @@ const createTicket = async (
     userId: new mongoose.Types.ObjectId().toHexString(),
     title: overrides.title ?? "Concert Ticket",
     price: overrides.price ?? 25,
+    id: new mongoose.Types.ObjectId().toHexString(),
   });
   await ticket.save();
   return ticket;
@@ -404,5 +405,32 @@ describe("create order - successful order creation", () => {
 
     const orders = await Order.find({ userId });
     expect(orders).toHaveLength(2);
+  });
+
+  it("prevents two concurrent requests from both reserving the same ticket", async () => {
+    const ticket = await createTicket();
+    const cookieA = await global.signin();
+    const cookieB = await global.signin();
+
+    const [responseA, responseB] = await Promise.all([
+      request(app)
+        .post("/api/orders")
+        .set("Cookie", cookieA)
+        .send({ ticketId: ticket.id }),
+      request(app)
+        .post("/api/orders")
+        .set("Cookie", cookieB)
+        .send({ ticketId: ticket.id }),
+    ]);
+
+    const statuses = [responseA.status, responseB.status].sort();
+    // Exactly one request should succeed (201) and the other should be
+    // rejected as a conflict (400) — never both succeeding, and never
+    // both failing (e.g. due to an unhandled 500 from the duplicate-key
+    // error escaping the catch block).
+    expect(statuses).toEqual([201, 400]);
+
+    const orders = await Order.find({ ticket: ticket.id });
+    expect(orders).toHaveLength(1);
   });
 });

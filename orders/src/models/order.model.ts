@@ -20,7 +20,9 @@ interface OrderDoc extends mongoose.Document {
   userId: string;
   ticket: TicketDoc;
   status: OrderStatus;
+  createdAt: Date;
   expiresAt: Date;
+  version: number;
 }
 
 const orderSchema = new mongoose.Schema(
@@ -47,19 +49,39 @@ const orderSchema = new mongoose.Schema(
     },
   },
   {
+    timestamps: { createdAt: true, updatedAt: false },
+    optimisticConcurrency: true,
     toJSON: {
-      transform(_doc, ret) {
-        const { _id, userId, ticket, status, expiresAt } = ret;
+      transform(doc: OrderDoc, ret: Record<string, any>) {
+        const { _id, userId, ticket, status, expiresAt, createdAt } = ret;
         return {
-          id: _id,
+          id: _id.toString(),
           userId,
           ticket,
           status,
           expiresAt,
+          createdAt,
+          version: doc.get("version"),
         };
       },
     },
-    versionKey: false,
+    versionKey: "version",
+  },
+);
+
+orderSchema.index(
+  { ticket: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: {
+        $in: [
+          OrderStatus.CREATED,
+          OrderStatus.AWAITING_PAYMENT,
+          OrderStatus.COMPLETED,
+        ],
+      },
+    },
   },
 );
 

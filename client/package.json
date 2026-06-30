@@ -10,19 +10,19 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^26.0.0",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/node": "^26.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "axios": "^1.18.1",
     "next": "16.2.9",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3"
   },
   "devDependencies": {
-    "eslint": "^10.5.0",
+    "eslint": "^10.6.0",
     "eslint-config-next": "16.2.9"
   },
   "packageManager": "yarn@1.22.22",

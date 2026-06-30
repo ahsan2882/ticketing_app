@@ -7,4 +7,11 @@ router.post("/api/users/signout", (req: Request, res: Response) => {
   res.send({});
 });
 
+router.all("/api/users/signout", (req, res) => {
+  res
+    .status(405)
+    .set("Allow", "POST")
+    .send({ errors: [{ message: "Method not allowed" }] });
+});
+
 export { router as signOutRouter };

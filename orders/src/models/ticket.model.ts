@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Order, OrderStatus } from "./order.model";
 
 interface TicketAttrs {
+  id: string;
   title: string;
   price: number;
   userId: string;
@@ -12,7 +13,8 @@ interface TicketDoc extends mongoose.Document {
   title: string;
   price: number;
   userId: string;
-  isReserved(): Promise<boolean>;
+  version: number;
+  isReserved(session?: mongoose.ClientSession): Promise<boolean>;
 }
 
 interface TicketModel extends mongoose.Model<TicketDoc> {
@@ -26,21 +28,34 @@ const ticketSchema = new mongoose.Schema(
     userId: { type: String, required: true },
   },
   {
+    optimisticConcurrency: true,
     toJSON: {
       transform(doc, ret) {
         const { _id, title, price, userId } = ret;
-        return { id: _id, title, price, userId };
+        return {
+          id: _id.toString(),
+          title,
+          price,
+          userId,
+          version: doc.get("version"),
+        };
       },
     },
-    versionKey: false,
+    versionKey: "version",
   },
 );
 
 ticketSchema.statics.build = (attrs: TicketAttrs) => {
-  return new Ticket(attrs);
+  const { id, ...otherFields } = attrs;
+  return new Ticket({
+    _id: attrs.id,
+    ...otherFields,
+  });
 };
 
-ticketSchema.methods.isReserved = async function () {
+ticketSchema.methods.isReserved = async function (
+  session?: mongoose.ClientSession,
+) {
   const existingOrder = await Order.findOne({
     ticket: this,
     status: {
@@ -50,7 +65,7 @@ ticketSchema.methods.isReserved = async function () {
         OrderStatus.COMPLETED,
       ],
     },
-  });
+  }).session(session ?? null);
   return !!existingOrder;
 };
 

@@ -1,9 +1,5 @@
 import { SUBJECTS } from "../../models/event.model";
-import type {
-  EventType,
-  TicketCategory,
-  TicketStatus,
-} from "../../models/ticket.model";
+import type { TicketStatus } from "../../models/ticket.model";
 
 export interface TicketCreatedEvent {
   subject: SUBJECTS.TicketCreated;

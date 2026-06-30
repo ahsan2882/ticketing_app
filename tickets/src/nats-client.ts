@@ -1,8 +1,9 @@
 import { JetStreamSetupService } from "@venuepass/common";
-import { connect, type NatsConnection } from "nats";
+import { connect, Events, type NatsConnection } from "nats";
+import { healthState } from "./health";
 
 class NatsClient {
-  private _client?: NatsConnection | undefined;
+  private _client?: NatsConnection;
 
   get client(): NatsConnection {
     if (!this._client) {
@@ -13,28 +14,86 @@ class NatsClient {
   }
 
   async connect(): Promise<void> {
-    const client = await connect({
+    healthState.setNotReady("nats");
+    this._client = await connect({
       servers: [process.env.NATS_URL!], // use nats://nats-srv:4222 inside k8s
       name: "tickets-service",
       pingInterval: 5_000,
       maxPingOut: 2,
+      waitOnFirstConnect: true,
+      maxReconnectAttempts: -1,
+      reconnectTimeWait: 2000,
     });
-
-    this._client = client;
 
     console.log("Connected to NATS");
 
-    try {
-      const jsm = await this._client.jetstreamManager();
-      const setupService = new JetStreamSetupService(jsm);
+    await this.ensureJetStream();
 
-      await setupService.ensureStream();
-    } catch (err) {
-      await client.drain().catch(() => undefined);
-      this._client = undefined;
-      throw err;
+    healthState.setReady("nats");
+
+    this.monitorConnectionStatus();
+    this.monitorClosedConnection();
+  }
+
+  async drain(): Promise<void> {
+    if (this._client) {
+      await this._client.drain();
     }
+  }
+
+  private async ensureJetStream(): Promise<void> {
+    if (!this._client) {
+      throw new Error("Cannot setup JetStream before connecting to NATS");
+    }
+
+    const jsm = await this._client.jetstreamManager();
+    const setupService = new JetStreamSetupService(jsm);
+
+    await setupService.ensureStream();
+  }
+
+  private monitorConnectionStatus(): void {
+    if (!this._client) return;
+
+    void (async () => {
+      for await (const status of this.client.status()) {
+        switch (status.type) {
+          case Events.Disconnect:
+            healthState.setNotReady("nats");
+            console.error("NATS disconnected");
+            break;
+
+          case Events.Reconnect:
+            healthState.setNotReady("nats");
+            console.log("NATS reconnected");
+
+            try {
+              await this.ensureJetStream();
+              healthState.setReady("nats");
+            } catch (err) {
+              healthState.setNotReady("nats");
+              console.error(
+                "Failed to initialize JetStream after reconnect:",
+                err,
+              );
+            }
+            break;
+
+          case Events.Error:
+            healthState.setNotReady("nats");
+            console.error("NATS connection error:", status.data);
+            break;
+        }
+      }
+    })();
+  }
+
+  private monitorClosedConnection(): void {
+    if (!this._client) return;
+
     this._client.closed().then((err) => {
+      healthState.setNotReady("nats");
+
       if (err) {
         console.error("NATS connection closed with error:", err);
         return;
@@ -42,12 +101,6 @@ class NatsClient {
 
       console.log("NATS connection closed");
     });
-  }
-
-  async drain(): Promise<void> {
-    if (this._client) {
-      await this._client.drain();
-    }
   }
 }
 

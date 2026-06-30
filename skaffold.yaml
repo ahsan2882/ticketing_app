@@ -3,6 +3,10 @@ kind: Config
 manifests:
   rawYaml:
     - ./infra/k8s/*
+deploy:
+  statusCheckDeadlineSeconds: 300
+  tolerateFailuresUntilDeadline: true
+  kubectl: {}
 build:
   local:
     push: false

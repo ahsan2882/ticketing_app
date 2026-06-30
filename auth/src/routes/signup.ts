@@ -16,9 +16,32 @@ router.post(
   [
     body("email").isEmail().withMessage("Please provide a valid email"),
     body("password")
-      .trim()
-      .isLength({ min: 4, max: 20 })
-      .withMessage("Password must be between 4 and 20 characters"),
+      .notEmpty()
+      .withMessage("Password is required")
+      .custom((value) => {
+        // Type guard: ensure value is a string before accessing it
+        if (typeof value !== "string" || value.length === 0) {
+          throw new BadRequestError(
+            "Password must be provided",
+            "credentials",
+          );
+        }
+        // Validate length without trimming - use exact input value
+        if (value.length < 4 || value.length > 20) {
+          throw new BadRequestError(
+            "Password must be between 4 and 20 characters",
+            "credentials",
+          );
+        }
+        // Reject passwords that are only whitespace
+        if (/^\s*$/.test(value)) {
+          throw new BadRequestError(
+            "Password cannot contain only whitespace characters",
+            "credentials",
+          );
+        }
+        return true;
+      }),
     body("name")
       .trim()
       .matches(/^[A-Za-z]{2,}\s[A-Za-z]{2,}$/)
@@ -39,7 +62,13 @@ router.post(
     const user = User.build({ email, password, name });
     try {
       await user.save();
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        throw new BadRequestError(
+          "User with this email already exists",
+          "credentials",
+        );
+      }
       console.error(err);
       throw new ServiceConnectionError("Error connecting to database");
     }
@@ -54,5 +83,11 @@ router.post(
     res.status(201).send(user);
   },
 );
+router.all("/api/users/signup", (req, res) => {
+  res
+    .status(405)
+    .set("Allow", "POST")
+    .send({ errors: [{ message: "Method not allowed" }] });
+});
 
 export { router as signUpRouter };

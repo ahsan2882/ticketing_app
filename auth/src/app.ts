@@ -2,6 +2,7 @@ import { errorHandler, NotFoundError } from "@venuepass/common";
 import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
+import { healthState } from "./health";
 import { currentUserRouter } from "./routes/current-user";
 import { signInRouter } from "./routes/signin";
 import { signOutRouter } from "./routes/signout";
@@ -24,6 +25,24 @@ app.use(currentUserRouter);
 app.use(signInRouter);
 app.use(signUpRouter);
 app.use(signOutRouter);
+
+app.get("/healthz", (_req, res) => {
+  res.status(200).send({ status: "ok" });
+});
+
+app.get("/readyz", (_req, res) => {
+  if (!healthState.isReady()) {
+    return res.status(503).send({
+      status: "not_ready",
+      mongo: false,
+    });
+  }
+
+  res.status(200).send({
+    status: "ready",
+    mongo: true,
+  });
+});
 
 app.all("/{*splat}", async (req, res) => {
   throw new NotFoundError();

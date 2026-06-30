@@ -30,39 +30,52 @@ router.post(
   createOrderValidators,
   validateRequest,
   async (req: Request, res: Response) => {
-    const { ticketId } = req.body;
+    const ticketId: string = req.body.ticketId;
     // Find the ticket the user is trying to order in the database
-    const ticket = await Ticket.findById(ticketId);
-    if (!ticket) {
-      throw new NotFoundError();
-    }
-    // Make sure the ticket is not already reserved
-    const isReserved = await ticket.isReserved();
-    if (isReserved) {
-      throw new BadRequestError("Ticket is already reserved");
-    }
-    // Build the order and save it to the database
+    const session = await mongoose.startSession();
 
-    const order = Order.build({
-      userId: req.currentUser!.id,
-      status: OrderStatus.CREATED,
-      ticket,
-    });
-    await order.save();
-    // Publish an event saying the order was created
-    await new OrderCreatedPublisher(natsClient.client).publish({
-      id: order.id,
-      status: order.status,
-      userId: order.userId,
-      version: 0,
-      expiresAt: order.expiresAt.toISOString(),
-      ticket: {
-        id: ticket.id,
-        price: ticket.price,
-      },
-    });
+    try {
+      let order: ReturnType<typeof Order.build> | undefined;
+      await session.withTransaction(async () => {
+        const ticket = await Ticket.findById(ticketId).session(session);
+        if (!ticket) {
+          throw new NotFoundError();
+        }
+        // Make sure the ticket is not already reserved
+        const isReserved = await ticket.isReserved(session);
+        if (isReserved) {
+          throw new BadRequestError("Ticket is already reserved");
+        }
+        // Build the order and save it to the database
+        order = Order.build({
+          userId: req.currentUser!.id,
+          status: OrderStatus.CREATED,
+          ticket,
+        });
+        await order.save({ session });
+      });
+      // Publish an event saying the order was created
+      await new OrderCreatedPublisher(natsClient.client).publish({
+        id: order!.id,
+        status: order!.status,
+        userId: order!.userId,
+        version: order!.version,
+        expiresAt: order!.expiresAt.toISOString(),
+        ticket: {
+          id: order!.ticket.id,
+          price: order!.ticket.price,
+        },
+      });
 
-    res.status(201).send(order);
+      res.status(201).send(order!);
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        throw new BadRequestError("Ticket is already reserved");
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   },
 );
 

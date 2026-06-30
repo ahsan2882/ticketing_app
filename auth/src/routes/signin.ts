@@ -12,7 +12,27 @@ router.post(
   "/api/users/signin",
   [
     body("email").isEmail().withMessage("Please provide a valid email"),
-    body("password").trim().notEmpty().withMessage("Password is required"),
+    body("password")
+      .notEmpty()
+      .withMessage("Password is required")
+      .bail()
+      .custom((value) => {
+        // Validate length without trimming - use exact input value directly
+        if (value.length < 1 || value.length > 50) {
+          throw new BadRequestError(
+            "Password must be between 1 and 50 characters",
+            "credentials",
+          );
+        }
+        // Reject passwords that are only whitespace
+        if (/^\s*$/.test(value)) {
+          throw new BadRequestError(
+            "Password cannot contain only whitespace characters",
+            "credentials",
+          );
+        }
+        return true;
+      }),
   ],
   validateRequest,
   async (req: Request, res: Response) => {

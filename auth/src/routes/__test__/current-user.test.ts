@@ -73,6 +73,30 @@ describe("currentUser flow - ", () => {
     expect(response.body).toEqual({ currentUser: null });
   });
 
+  it("returns currentUser: null when the session cookie contains an expired JWT signed with the correct key", async () => {
+    if (!process.env.JWT_KEY) {
+      throw new Error(
+        "JWT_KEY is not set in the test environment — required to sign a correctly-keyed expired token",
+      );
+    }
+
+    const expiredJwt = jwt.sign(
+      { email: "test@test.com", id: "someid" },
+      process.env.JWT_KEY,
+      { expiresIn: "-10s" },
+    );
+    const fakeSession = Buffer.from(
+      JSON.stringify({ jwt: expiredJwt }),
+    ).toString("base64");
+
+    const response = await request(app)
+      .get("/api/users/currentuser")
+      .set("Cookie", `session=${fakeSession}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ currentUser: null });
+  });
+
   it("returns the current user's email after signin", async () => {
     const cookie = await global.signin();
 
@@ -107,12 +131,18 @@ describe("currentUser flow - ", () => {
     expect(response.body.currentUser.password).toBeUndefined();
   });
 
-  it("signup and signin resolve to the same user id", async () => {
-    // signin() internally does signup then signin — call it twice with the
-    // same credentials and both cookies should resolve to the same id.
-    // The beforeEach db wipe means we need distinct emails here.
+  it("signing in twice for the same user returns cookies that resolve to the same id", async () => {
+    // First call does signup + signin and gives us a cookie.
     const cookie1 = await global.signin("idcheck@test.com", "validpass");
-    const cookie2 = await global.signin("idcheck@test.com", "validpass");
+
+    // Second cookie comes from signin only — same user, fresh session.
+    const signinResponse = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "idcheck@test.com", password: "validpass" })
+      .expect(200);
+
+    const cookie2 = signinResponse.get("Set-Cookie");
+    if (!cookie2) throw new Error("no cookie returned from signin");
 
     const res1 = await request(app)
       .get("/api/users/currentuser")
@@ -216,11 +246,49 @@ describe("currentUser flow - ", () => {
     expect(response.headers["content-type"]).toMatch(/json/);
   });
 
+  it("signin sets a session cookie that is httpOnly", async () => {
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "cookiecheck@test.com",
+        password: "validpass",
+        name: "Cookie Check",
+      })
+      .expect(201);
+
+    const setCookieHeader = response.headers["set-cookie"];
+    expect(setCookieHeader).toBeDefined();
+
+    const sessionCookie = (setCookieHeader as unknown as string[]).find(
+      (c: string) => c.startsWith("session="),
+    );
+    expect(sessionCookie).toBeDefined();
+    expect(sessionCookie!.toLowerCase()).toContain("httponly");
+  });
+
   it("returns 405 for POST /api/users/currentuser", async () => {
     await request(app).post("/api/users/currentuser").expect(405);
   });
 
   it("returns 405 for DELETE /api/users/currentuser", async () => {
     await request(app).delete("/api/users/currentuser").expect(405);
+  });
+
+  it("405 response sets Allow: GET header", async () => {
+    const response = await request(app)
+      .post("/api/users/currentuser")
+      .expect(405);
+
+    expect(response.headers.allow).toBe("GET");
+  });
+
+  it("405 response body matches the errors array shape", async () => {
+    const response = await request(app)
+      .delete("/api/users/currentuser")
+      .expect(405);
+
+    expect(response.body).toEqual({
+      errors: [{ message: "Method not allowed" }],
+    });
   });
 });

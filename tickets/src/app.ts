@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
 
+import { healthState } from "./health";
 import { createTicketRouter } from "./routes/create-ticket";
 import { findAllTicketRouter } from "./routes/find-all-tickets";
 import { findTicketRouter } from "./routes/find-ticket";
@@ -27,6 +28,29 @@ app.use(createTicketRouter);
 app.use(findTicketRouter);
 app.use(findAllTicketRouter);
 app.use(updateTicketRouter);
+
+app.get("/healthz", (_req, res) => {
+  res.status(200).send({ status: "ok" });
+});
+
+app.get("/readyz", (_req, res) => {
+  const mongo = healthState.isCheckReady("mongo");
+  const nats = healthState.isCheckReady("nats");
+
+  if (!healthState.isReady()) {
+    return res.status(503).send({
+      status: "not_ready",
+      mongo,
+      nats,
+    });
+  }
+
+  res.status(200).send({
+    status: "ready",
+    mongo,
+    nats,
+  });
+});
 
 app.all("/{*splat}", async (req, res) => {
   throw new NotFoundError();
