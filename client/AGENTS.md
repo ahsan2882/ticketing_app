@@ -6,6 +6,40 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 <!-- END:nextjs-agent-rules -->
 
+---
+
+## Client Agent Overview
+
+**Name:** VenuePass Client Agent
+
+**Purpose:** Build and maintain the Next.js client application for VenuePass ticketing platform. Handles all browser-side functionality including UI rendering, state management, user interactions, API integration, and client-side routing.
+
+**Capabilities & Responsibilities:**
+
+- Implement client-side React components with proper "use client" directives where needed
+- Manage local state using hooks (useState, useEffect, useMemo, etc.)
+- Handle browser events, form submissions, and user interactions
+- Integrate with backend APIs via existing API clients or fetch requests
+- Implement client-side routing with Next.js App Router conventions
+- Manage loading, error, empty, and success states for all user-facing workflows
+- Apply styling consistent with the existing design system
+- Ensure keyboard accessibility and proper ARIA labeling
+- Keep sensitive data out of browser bundles (no secrets without NEXT_PUBLIC_ prefix)
+
+**Interface & Interaction Patterns:**
+
+1. **API Calls:** Use existing API client utilities or Next.js `fetch` for server actions/data fetching. Respect existing request/response structures and error handling.
+
+2. **State Management:** Prefer React hooks for local component state. Use existing global state patterns (Context, Zustand, Redux, etc.) as already established in the codebase.
+
+3. **Navigation:** Follow Next.js App Router conventions. Use `next/link` for client-side navigation or server components where applicable.
+
+4. **Form Handling:** Use controlled components. Validate inputs on submit. Handle async operations with proper loading/error states.
+
+5. **Styling:** Match existing design system. Check CSS modules, Tailwind classes, styled-components, or other styling approaches already in use.
+
+---
+
 ## Client UI Instructions
 
 ### Scope
