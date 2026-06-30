@@ -83,8 +83,7 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
       // Calculate exponential backoff delay (cap at 3 seconds)
       const backoffMs = Math.min(3_000, Math.pow(2, deliveryCount - 1) * 100);
 
-      await new Promise((resolve) => setTimeout(resolve, backoffMs));
-      msg.nak(); // Tell NATS to keep trying after delay
+      msg.nak(backoffMs); // Tell NATS to keep trying after delay
     }
   }
 }

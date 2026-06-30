@@ -9,7 +9,7 @@ import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
 import mongoose from "mongoose";
 import { TicketCreatedPublisher } from "../events/publishers/ticket-created-publisher";
-import { Ticket, type CreateTicketBody } from "../models/ticket.model";
+import { Ticket, type CreateTicketBodyIngress } from "../models/ticket.model";
 import { natsClient } from "../nats-client";
 
 const router = express.Router();
@@ -48,7 +48,7 @@ const createTicketValidators = [
     .isEmpty()
     .withMessage("City must be a string"),
   body("eventDate")
-    .isISO8601({ strict: true, strictSeparator: true })
+    .isISO8601()
     .toDate()
     .withMessage("Event date must be a valid date"),
   body("eventType")
@@ -57,6 +57,10 @@ const createTicketValidators = [
   body("category")
     .isIn(Object.values(TicketCategory))
     .withMessage("Invalid ticket category"),
+  body("seat")
+    .not()
+    .exists()
+    .withMessage("Use seats as an array instead of seat"),
   body("seats")
     .optional()
     .isArray({ min: 1, max: MAX_TICKETS_PER_REQUEST })
@@ -103,7 +107,13 @@ router.post(
   createTicketValidators,
   validateRequest,
   async (req: Request, res: Response) => {
-    const { seats, quantity, ...ticketAttrs }: CreateTicketBody = req.body;
+    const {
+      seats,
+      quantity,
+      eventDate: eventDateString,
+      ...ticketAttrs
+    }: CreateTicketBodyIngress = req.body;
+    const parsedEventDate = new Date(eventDateString);
     const seatList: (string | undefined)[] =
       Array.isArray(seats) && seats.length > 0
         ? seats
@@ -128,7 +138,7 @@ router.post(
             artist: ticketAttrs.artist,
             venue: ticketAttrs.venue,
             city: ticketAttrs.city,
-            eventDate: ticketAttrs.eventDate,
+            eventDate: parsedEventDate,
             eventType: ticketAttrs.eventType,
             category: ticketAttrs.category,
             ...(seat !== undefined && { seat }),

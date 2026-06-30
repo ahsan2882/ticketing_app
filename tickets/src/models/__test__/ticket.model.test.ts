@@ -26,12 +26,9 @@ describe("ticket model - ", () => {
     secondInstance.set({ price: 300 });
 
     await firstInstance.save();
-    try {
-      await secondInstance.save();
-    } catch (error) {
-      return Promise.resolve();
-    }
-    return Promise.reject("Should not reach this point");
+    await expect(secondInstance.save()).rejects.toThrow(
+      mongoose.Error.VersionError,
+    );
   });
 
   it("should show an incremented version after a successful update", async () => {

@@ -27,7 +27,7 @@ const start = async () => {
   try {
     await connectMongo();
   } catch (error) {
-    healthState.setMongoNotReady();
+    healthState.setNotReady("mongo");
     console.error("MongoDB initial connection failed:", error);
     throw new ServiceConnectionError("Error connecting to MongoDB");
   }
@@ -35,17 +35,17 @@ const start = async () => {
 
 const connectMongo = async () => {
   mongoose.connection.on("connected", () => {
-    healthState.setMongoReady();
+    healthState.setReady("mongo");
     console.log("Connected to MongoDB");
   });
 
   mongoose.connection.on("disconnected", () => {
-    healthState.setMongoNotReady();
+    healthState.setNotReady("mongo");
     console.error("Error connecting to database");
   });
 
   mongoose.connection.on("error", (err) => {
-    healthState.setMongoNotReady();
+    healthState.setNotReady("mongo");
     console.error("Error connecting to database");
   });
 

@@ -46,6 +46,7 @@ describe("ticket updated listener", () => {
     expect(updatedTicket).toBeDefined();
     expect(updatedTicket?.title).toEqual("Updated title");
     expect(updatedTicket?.price).toEqual(20);
+    expect(updatedTicket?.version).toEqual(data.version);
   });
 
   it("should ack the message when version is already processed (replayed event)", async () => {

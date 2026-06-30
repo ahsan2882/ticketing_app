@@ -308,20 +308,22 @@ describe("cancel order - successful cancellation", () => {
         }) as any,
     );
 
-    const response = await request(app)
-      .delete(`/api/orders/${order.id}`)
-      .set("Cookie", cookie)
-      .send();
+    try {
+      const response = await request(app)
+        .delete(`/api/orders/${order.id}`)
+        .set("Cookie", cookie)
+        .send();
 
-    expect(response.status).not.toBe(500);
-    expect(response.status).toBe(400); // update if you use a ConflictError/409 instead
+      expect(response.status).not.toBe(500);
+      expect(response.status).toBe(400); // update if you use a ConflictError/409 instead
 
-    // The real document should still reflect the AWAITING_PAYMENT save,
-    // not have been overwritten by the stale cancel attempt.
-    const current = await Order.findById(order.id);
-    expect(current!.status).toEqual(OrderStatus.AWAITING_PAYMENT);
-
-    findByIdSpy.mockRestore();
+      // The real document should still reflect the AWAITING_PAYMENT save,
+      // not have been overwritten by the stale cancel attempt.
+      const current = await Order.findById(order.id);
+      expect(current!.status).toEqual(OrderStatus.AWAITING_PAYMENT);
+    } finally {
+      findByIdSpy.mockRestore();
+    }
   });
 
   it("publishes an event with only the ticket id (no price/title leakage)", async () => {

@@ -1,17 +1,5 @@
-class HealthState {
-  private mongoReady = false;
+import { HealthState } from "@venuepass/common";
 
-  setMongoReady(): void {
-    this.mongoReady = true;
-  }
+type AuthHealthCheck = "mongo";
 
-  setMongoNotReady(): void {
-    this.mongoReady = false;
-  }
-
-  isReady(): boolean {
-    return this.mongoReady;
-  }
-}
-
-export const healthState = new HealthState();
+export const healthState = new HealthState<AuthHealthCheck>(["mongo"]);

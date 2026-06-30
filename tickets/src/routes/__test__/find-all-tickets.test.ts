@@ -549,10 +549,13 @@ describe("find all tickets — pagination", () => {
   });
 
   it("caps limit at the maximum page size rather than honoring an absurdly large value", async () => {
-    await createTicket();
-    await request(app).get("/api/tickets?limit=999999").expect(200);
-    // No assertion beyond not erroring — the real protection is the
-    // server-side MAX_PAGE_SIZE cap, this just confirms it doesn't 500.
+    // Seed more than MAX_PAGE_SIZE tickets to verify the cap is actually enforced
+    const ticketTitles = Array.from({ length: 150 }, (_, i) => `Ticket-${i}`);
+    await Promise.all(ticketTitles.map((title) => createTicket({ title })));
+
+    const { body } = await request(app).get("/api/tickets?limit=999999").expect(200);
+    // Verify the response is capped at MAX_PAGE_SIZE (100 tickets), not 999999
+    expect(body).toHaveLength(100);
   });
 
   it("falls back to default pagination when limit/skip are garbage, non-numeric values", async () => {

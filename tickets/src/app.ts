@@ -34,8 +34,8 @@ app.get("/healthz", (_req, res) => {
 });
 
 app.get("/readyz", (_req, res) => {
-  const mongo = healthState.isMongoReady();
-  const nats = healthState.isNatsReady();
+  const mongo = healthState.isCheckReady("mongo");
+  const nats = healthState.isCheckReady("nats");
 
   if (!healthState.isReady()) {
     return res.status(503).send({

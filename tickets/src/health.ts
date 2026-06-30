@@ -1,34 +1,8 @@
-class HealthState {
-  private mongoReady = false;
-  private natsReady = false;
+import { HealthState } from "@venuepass/common";
 
-  setMongoReady(): void {
-    this.mongoReady = true;
-  }
+type TicketsHealthCheck = "mongo" | "nats";
 
-  setMongoNotReady(): void {
-    this.mongoReady = false;
-  }
-
-  setNatsReady(): void {
-    this.natsReady = true;
-  }
-
-  setNatsNotReady(): void {
-    this.natsReady = false;
-  }
-
-  isMongoReady(): boolean {
-    return this.mongoReady;
-  }
-
-  isNatsReady(): boolean {
-    return this.natsReady;
-  }
-
-  isReady(): boolean {
-    return this.mongoReady && this.natsReady;
-  }
-}
-
-export const healthState = new HealthState();
+export const healthState = new HealthState<TicketsHealthCheck>([
+  "mongo",
+  "nats",
+]);

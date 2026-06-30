@@ -26,7 +26,7 @@ router.get("/api/tickets", async (req: Request, res: Response) => {
     !!req.currentUser ? {} : { status: TicketStatus.AVAILABLE },
   )
     .select(fields)
-    .sort({ eventDate: 1 }) // soonest events first — without this, Mongo's
+    .sort({ eventDate: 1, _id: 1 }) // soonest events first — without this, Mongo's
     // return order is not guaranteed; eventDate is the natural sort for a
     // ticket marketplace listing, unlike find-all-orders where createdAt
     // (newest first) made more sense

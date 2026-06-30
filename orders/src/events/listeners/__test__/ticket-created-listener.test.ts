@@ -86,4 +86,16 @@ describe("ticket created listener", () => {
     expect(ticket).not.toBeNull();
     expect(ticket!.id).toEqual(data.id);
   });
+
+  it("acks a redelivered create event without inserting a duplicate ticket", async () => {
+    const { listener, data } = await setUp();
+    const firstMsg = { ack: jest.fn() } as unknown as JsMsg;
+    const secondMsg = { ack: jest.fn() } as unknown as JsMsg;
+
+    await listener.onMessage(data, firstMsg);
+    await listener.onMessage(data, secondMsg);
+
+    expect(await Ticket.countDocuments({ _id: data.id })).toBe(1);
+    expect(secondMsg.ack).toHaveBeenCalled();
+  });
 });

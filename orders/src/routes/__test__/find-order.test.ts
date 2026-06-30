@@ -60,7 +60,7 @@ describe("find order - not found", () => {
       .expect(404);
   });
 
-  it("returns 400 for null orderId", async () => {
+  it("returns 400 when the literal string 'null' is used as orderId", async () => {
     await request(app)
       .get(`/api/orders/${null}`)
       .set("Cookie", await global.signin())

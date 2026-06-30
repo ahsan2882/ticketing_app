@@ -114,15 +114,15 @@ describe("signup flow - ", () => {
       .expect(400);
   });
 
-  it("trims whitespace from password before length validation", async () => {
-    // A password of all spaces should fail after trimming
+  it("fails when password is all spaces", async () => {
+    // A password of all spaces should fail - not trimmed
     await request(app)
       .post("/api/users/signup")
       .send({ email: "test@test.com", password: "     ", name: "Test Test" })
       .expect(400);
   });
 
-  it("succeeds when password meets the min length only after trimming surrounding whitespace", async () => {
+  it("succeeds when password meets the min length and has surrounding whitespace (whitespace is preserved, not trimmed)", async () => {
     await request(app)
       .post("/api/users/signup")
       .send({
@@ -168,22 +168,26 @@ describe("signup flow - ", () => {
       .expect(400);
   });
 
-  it("documents how leading/trailing whitespace in email is handled (no .trim() in the email chain)", async () => {
+  it("rejects emails with leading/trailing whitespace (no normalization, must be exact)", async () => {
+    // Emails must not have surrounding whitespace - the validator regex
+    // /[^\s@]+/ explicitly rejects spaces, and there is no .trim() in the chain
+    await request(app).post("/api/users/signup").send({
+      email: "  whitespace@test.com  ",
+      password: "test",
+      name: "Test Test",
+    }).expect(400);
+
+    // Verify the error message references the email validation issue
     const response = await request(app).post("/api/users/signup").send({
       email: "  whitespace@test.com  ",
       password: "test",
       name: "Test Test",
     });
 
-    if (response.status === 201) {
-      // Accepted — confirm whether the stored email retains the whitespace,
-      // since that would mean future exact-match lookups (signin, the
-      // duplicate-email check here) could silently fail to match a
-      // visually-identical email typed without the padding.
-      expect(response.body.email).toBeDefined();
-    } else {
-      expect(response.status).toBe(400);
-    }
+    expect(response.status).toBe(400);
+    const messages = response.body.errors.map((e: { message: string }) => e.message);
+    // Email validation errors typically reference email format issues
+    expect(messages.some(m => m.includes("Please provide a valid email") || m.includes("invalid"))).toBe(true);
   });
 
   it("treats emails as case-insensitive for duplicate check", async () => {
@@ -401,6 +405,75 @@ describe("signup flow - ", () => {
       .expect(400);
 
     expect(response.headers["content-type"]).toMatch(/json/);
+  });
+
+  it("preserves password whitespace consistently - signup and signin use exact input values", async () => {
+    // Register a user with password that has surrounding whitespace
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "whitespace@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(201);
+
+    // Sign in with the EXACT same password including whitespace (not trimmed)
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "whitespace@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(200);
+
+    expect(response.body.email).toBe("whitespace@test.com");
+  });
+
+  it("fails when signin uses trimmed version of a non-trimmed stored password", async () => {
+    // Register with whitespace-padded password
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(201);
+
+    // Try to sign in with trimmed version - should fail because stored password has whitespace
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "trimcheck@test.com", password: "abcd" })
+      .expect(400);
+  });
+
+  it("fails when signup uses trimmed version of a non-trimmed stored password", async () => {
+    // First register with whitespace-padded password
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck2@test.com", password: "  abcd  ", name: "Test Test" })
+      .expect(201);
+
+    // Try to register another user with trimmed version of the same credentials
+    // This should fail because first user already has whitespace version stored
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck2@test.com", password: "abcd", name: "Test Test" })
+      .expect(400);
+
+    // Verify errors contain user-already-exists message
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({ email: "trimcheck2@test.com", password: "abcd", name: "Test Test" })
+      .expect(400);
+    expect(response.body.errors.some(e => e.message.includes("User with this email already exists"))).toBe(true);
+  });
+
+  it("preserves trailing whitespace in password across signup and signin paths", async () => {
+    // Test that a password with trailing whitespace is preserved exactly (not trimmed)
+    const email = "whitespace-trailing@test.com";
+    await request(app)
+      .post("/api/users/signup")
+      .send({ email, password: "abcd ", name: "Test Test" })
+      .expect(201);
+
+    // Sign in must use exact same input as signup (no trimming applied either way)
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email, password: "abcd " })
+      .expect(200);
+
+    expect(response.body.email).toBe(email);
   });
 
   it("can register multiple distinct users independently", async () => {

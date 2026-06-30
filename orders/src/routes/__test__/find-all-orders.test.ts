@@ -334,16 +334,19 @@ describe("find all orders - pagination", () => {
   it("caps limit at the maximum page size rather than honoring an absurdly large value", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const cookie = await global.signin(userId);
-    const ticket = await createTicket();
-    await createOrder(userId, ticket);
+    // Seed more than MAX_PAGE_SIZE orders to verify the cap is actually enforced
+    for (let i = 0; i < 120; i++) {
+      const ticket = await createTicket({ title: `Ticket-${i}` });
+      await createOrder(userId, ticket);
+    }
 
-    await request(app)
+    const { body } = await request(app)
       .get("/api/orders?limit=999999")
       .set("Cookie", cookie)
       .send()
       .expect(200);
-    // No assertion needed beyond not erroring — the real protection here
-    // is server-side (MAX_PAGE_SIZE cap), this just confirms it doesn't 500.
+    // Verify response is capped at MAX_PAGE_SIZE (100), not honoring the absurd limit
+    expect(body.length).toBeLessThanOrEqual(100);
   });
 
   it("falls back to default pagination when limit/skip are garbage, non-numeric values", async () => {

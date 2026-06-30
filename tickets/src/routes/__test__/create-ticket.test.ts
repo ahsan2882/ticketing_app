@@ -2,7 +2,7 @@ import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import request from "supertest";
 import { app } from "../../app";
 import { TicketCreatedPublisher } from "../../events/publishers/ticket-created-publisher";
-import { Ticket, type CreateTicketBody } from "../../models/ticket.model";
+import { Ticket, type CreateTicketBodyIngress } from "../../models/ticket.model";
 
 jest.mock("../../events/publishers/ticket-created-publisher");
 
@@ -10,11 +10,11 @@ afterEach(() => {
   (TicketCreatedPublisher.prototype.publish as jest.Mock).mockClear();
 });
 
-type TicketPaylod = Record<string, unknown> & Partial<CreateTicketBody>;
+type TicketPayload = Record<string, unknown> & Partial<CreateTicketBodyIngress>;
 
 // ---- helpers -------------------------------------------------------------
 
-const validTicketPayload = (overrides?: TicketPaylod) => ({
+const validTicketPayload = (overrides?: TicketPayload) => ({
   title: "Coldplay Live in Concert",
   price: 99.99,
   artist: "Coldplay",
@@ -240,7 +240,7 @@ describe("create tickets — eventDate validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send(validTicketPayload({ eventDate: new Date("15th December 2026") }))
+      .send(validTicketPayload({ eventDate: "not-a-date" }))
       .expect(400);
   });
 
@@ -248,7 +248,7 @@ describe("create tickets — eventDate validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send(validTicketPayload({ eventDate: new Date("2026-12-15 19:00:00") }))
+      .send(validTicketPayload({ eventDate: "2026-12-15 19:00:00" }))
       .expect(201);
   });
 
@@ -257,7 +257,7 @@ describe("create tickets — eventDate validation", () => {
       .post("/api/tickets")
       .set("Cookie", cookie)
       .send(
-        validTicketPayload({ eventDate: new Date("2026-12-15T19:00:00.000Z") }),
+        validTicketPayload({ eventDate: "2026-12-15T19:00:00.000Z" }),
       )
       .expect(201);
   });
@@ -814,12 +814,13 @@ describe("create tickets — eventDate must be in the future (end-to-end)", () =
   });
 
   it("returns 400 (not 500) when eventDate is in the past", async () => {
+    const yesterdayISO = new Date(Date.now() - 86_400_000).toISOString();
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
       .send(
         validTicketPayload({
-          eventDate: new Date(Date.now() - 86_400_000), // yesterday
+          eventDate: yesterdayISO,
         }),
       )
       .expect(400);

@@ -34,7 +34,15 @@ export class JetStreamSetupService {
         STREAM_NAME,
         config.durableName,
       );
-    } catch {
+    } catch (err) {
+      // Check specifically for 404 Not Found
+      const isNotFound =
+        err && typeof err === "object" && "code" in err && err.code === 404;
+
+      if (!isNotFound) {
+        // Rethrow non-404 errors (network, auth, 500, etc.)
+        throw err;
+      }
       // Consumer does not exist - create it
       await this.jetStreamManager.consumers.add(STREAM_NAME, {
         durable_name: config.durableName,

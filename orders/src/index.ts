@@ -25,10 +25,12 @@ const validateEnv = () => {
   }
 };
 
+let server: ReturnType<typeof app.listen> | undefined;
+
 const start = async () => {
   validateEnv();
   setupGracefulShutdown();
-  app.listen(3000, () => {
+  server = app.listen(3000, () => {
     console.log("Listening on port 3000");
   });
   const results = await Promise.allSettled([connectMongo(), connectNats()]);
@@ -36,9 +38,9 @@ const start = async () => {
     const isMongo = index === 0;
     if (result.status === "rejected") {
       if (isMongo) {
-        healthState.setMongoNotReady();
+        healthState.setNotReady("mongo");
       } else {
-        healthState.setNatsNotReady();
+        healthState.setNotReady("nats");
       }
       console.error(
         `Startup error on ${isMongo ? "MongoDB" : "NATS"}:`,
@@ -51,17 +53,17 @@ const start = async () => {
 
 const connectMongo = async () => {
   mongoose.connection.on("connected", () => {
-    healthState.setMongoReady();
+    healthState.setReady("mongo");
     console.log("Connected to MongoDB");
   });
 
   mongoose.connection.on("disconnected", () => {
-    healthState.setMongoNotReady();
+    healthState.setNotReady("mongo");
     console.error("Error connecting to database");
   });
 
   mongoose.connection.on("error", (err) => {
-    healthState.setMongoNotReady();
+    healthState.setNotReady("mongo");
     console.error("Error connecting to database");
   });
 
@@ -90,6 +92,14 @@ const setupGracefulShutdown = (): void => {
     console.log("Shutting down orders service...");
 
     try {
+      if (server) {
+        await new Promise<void>((resolve, reject) => {
+          server!.close((err?: Error) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      }
       await natsClient.drain();
       await mongoose.connection.close();
 

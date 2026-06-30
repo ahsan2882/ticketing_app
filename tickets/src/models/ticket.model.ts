@@ -1,13 +1,13 @@
 import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import mongoose from "mongoose";
 
-interface CreateTicketBody {
+interface CreateTicketBodyIngress {
   title: string;
   price: number;
   artist: string;
   venue: string;
   city: string;
-  eventDate: Date;
+  eventDate: string;
   eventType: EventType;
   category: TicketCategory;
   seats?: string[];
@@ -173,4 +173,9 @@ ticketSchema.statics.build = (attrs: TicketAttrs) => {
 
 const Ticket = mongoose.model<TicketDoc, TicketModel>("Ticket", ticketSchema);
 
-export { Ticket, type CreateTicketBody, type TicketAttrs, type TicketDoc };
+export {
+  Ticket,
+  type CreateTicketBodyIngress,
+  type TicketAttrs,
+  type TicketDoc,
+};

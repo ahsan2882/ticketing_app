@@ -16,9 +16,26 @@ router.post(
   [
     body("email").isEmail().withMessage("Please provide a valid email"),
     body("password")
-      .trim()
-      .isLength({ min: 4, max: 20 })
-      .withMessage("Password must be between 4 and 20 characters"),
+      .notEmpty()
+      .withMessage("Password is required")
+      .custom((value, { req }) => {
+        // Validate length without trimming - use exact input value from req.body
+        const password = (req.body as any).password;
+        if (password.length < 4 || password.length > 20) {
+          throw new BadRequestError(
+            "Password must be between 4 and 20 characters",
+            "credentials",
+          );
+        }
+        // Reject passwords that are only whitespace
+        if (/^\s*$/.test(password)) {
+          throw new BadRequestError(
+            "Password cannot contain only whitespace characters",
+            "credentials",
+          );
+        }
+        return true;
+      }),
     body("name")
       .trim()
       .matches(/^[A-Za-z]{2,}\s[A-Za-z]{2,}$/)

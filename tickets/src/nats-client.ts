@@ -14,7 +14,7 @@ class NatsClient {
   }
 
   async connect(): Promise<void> {
-    healthState.setNatsNotReady();
+    healthState.setNotReady("nats");
     this._client = await connect({
       servers: [process.env.NATS_URL!], // use nats://nats-srv:4222 inside k8s
       name: "tickets-service",
@@ -29,7 +29,7 @@ class NatsClient {
 
     await this.ensureJetStream();
 
-    healthState.setNatsReady();
+    healthState.setReady("nats");
 
     this.monitorConnectionStatus();
     this.monitorClosedConnection();
@@ -59,19 +59,19 @@ class NatsClient {
       for await (const status of this.client.status()) {
         switch (status.type) {
           case Events.Disconnect:
-            healthState.setNatsNotReady();
+            healthState.setNotReady("nats");
             console.error("NATS disconnected");
             break;
 
           case Events.Reconnect:
-            healthState.setNatsNotReady();
+            healthState.setNotReady("nats");
             console.log("NATS reconnected");
 
             try {
               await this.ensureJetStream();
-              healthState.setNatsReady();
+              healthState.setReady("nats");
             } catch (err) {
-              healthState.setNatsNotReady();
+              healthState.setNotReady("nats");
               console.error(
                 "Failed to initialize JetStream after reconnect:",
                 err,
@@ -80,7 +80,7 @@ class NatsClient {
             break;
 
           case Events.Error:
-            healthState.setNatsNotReady();
+            healthState.setNotReady("nats");
             console.error("NATS connection error:", status.data);
             break;
         }
@@ -92,7 +92,7 @@ class NatsClient {
     if (!this._client) return;
 
     this._client.closed().then((err) => {
-      healthState.setNatsNotReady();
+      healthState.setNotReady("nats");
 
       if (err) {
         console.error("NATS connection closed with error:", err);
