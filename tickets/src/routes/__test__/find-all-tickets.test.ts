@@ -553,7 +553,9 @@ describe("find all tickets — pagination", () => {
     const ticketTitles = Array.from({ length: 150 }, (_, i) => `Ticket-${i}`);
     await Promise.all(ticketTitles.map((title) => createTicket({ title })));
 
-    const { body } = await request(app).get("/api/tickets?limit=999999").expect(200);
+    const { body } = await request(app)
+      .get("/api/tickets?limit=999999")
+      .expect(200);
     // Verify the response is capped at MAX_PAGE_SIZE (100 tickets), not 999999
     expect(body).toHaveLength(100);
   });

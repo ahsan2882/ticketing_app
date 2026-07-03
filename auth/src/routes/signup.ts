@@ -1,12 +1,11 @@
-import express, { type Request, type Response } from "express";
-import { body } from "express-validator";
-import jwt from "jsonwebtoken";
-
 import {
   BadRequestError,
   ServiceConnectionError,
   validateRequest,
 } from "@venuepass/common";
+import express, { type Request, type Response } from "express";
+import { body } from "express-validator";
+import jwt from "jsonwebtoken";
 import { User } from "../models/user.model";
 
 const router = express.Router();
@@ -21,10 +20,7 @@ router.post(
       .custom((value) => {
         // Type guard: ensure value is a string before accessing it
         if (typeof value !== "string" || value.length === 0) {
-          throw new BadRequestError(
-            "Password must be provided",
-            "credentials",
-          );
+          throw new BadRequestError("Password must be provided", "credentials");
         }
         // Validate length without trimming - use exact input value
         if (value.length < 4 || value.length > 20) {

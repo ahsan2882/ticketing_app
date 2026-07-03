@@ -34,33 +34,23 @@ const start = async () => {
     console.log("Listening on port 3000");
   });
 
-  // Use Promise.allSettled to handle each dependency independently
-  const results = await Promise.allSettled([
-    connectMongo(),
-    connectNatsClient(),
-  ]);
-
-  // Process results and set health state for each connection
-  results.forEach((result, index) => {
-    const isMongo = index === 0;
-    if (result.status === "rejected") {
-      if (isMongo) {
-        healthState.setNotReady("mongo");
-      } else {
-        healthState.setNotReady("nats");
-      }
-      console.error(
-        `Startup error on ${isMongo ? "MongoDB" : "NATS"}:`,
-        result.reason,
-      );
-    }
-  });
-  if (results.some((result) => result.status === "rejected")) {
-    throw new ServiceConnectionError(
-      "Failed to initialize tickets service dependencies",
-    );
+  try {
+    await connectMongo();
+  } catch (error) {
+    healthState.setNotReady("mongo");
+    console.error("Error connecting to MongoDB:", error);
   }
-  await startOrderListeners();
+  try {
+    await connectNatsClient();
+  } catch (error) {
+    healthState.setNotReady("nats");
+    console.error("Error connecting to NATS:", error);
+  }
+  try {
+    await startOrderListeners();
+  } catch (error) {
+    console.error("Error starting order listeners:", error);
+  }
 };
 
 const connectMongo = async (retries = 10) => {
@@ -113,7 +103,6 @@ const setupGracefulShutdown = () => {
       }
       await natsClient.drain();
       await mongoose.connection.close();
-
       process.exit(0);
     } catch (err) {
       console.error("Error during shutdown:", err);

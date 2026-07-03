@@ -1,6 +1,7 @@
 import { ServiceConnectionError } from "@venuepass/common";
 import mongoose from "mongoose";
 import { app } from "./app";
+import { ExpirationCompleteListener } from "./events/listeners/expiration-complete-listener";
 import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
 import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
 import { healthState } from "./health";
@@ -33,22 +34,23 @@ const start = async () => {
   server = app.listen(3000, () => {
     console.log("Listening on port 3000");
   });
-  const results = await Promise.allSettled([connectMongo(), connectNats()]);
-  results.forEach((result, index) => {
-    const isMongo = index === 0;
-    if (result.status === "rejected") {
-      if (isMongo) {
-        healthState.setNotReady("mongo");
-      } else {
-        healthState.setNotReady("nats");
-      }
-      console.error(
-        `Startup error on ${isMongo ? "MongoDB" : "NATS"}:`,
-        result.reason,
-      );
-    }
-  });
-  await startTicketListeners();
+  try {
+    await connectMongo();
+  } catch (error) {
+    healthState.setNotReady("mongo");
+    console.error("Error connecting to MongoDB:", error);
+  }
+  try {
+    await connectNats();
+  } catch (error) {
+    healthState.setNotReady("nats");
+    console.error("Error connecting to NATS:", error);
+  }
+  try {
+    await startTicketListeners();
+  } catch (error) {
+    console.error("Error starting ticket listeners:", error);
+  }
 };
 
 const connectMongo = async () => {
@@ -67,7 +69,9 @@ const connectMongo = async () => {
     console.error("Error connecting to database");
   });
 
-  await mongoose.connect(process.env.ORDERS_MONGO_URI!);
+  await mongoose.connect(process.env.ORDERS_MONGO_URI!, {
+    serverSelectionTimeoutMS: 30000,
+  });
 };
 
 const connectNats = async () => {
@@ -82,6 +86,7 @@ const startTicketListeners = async () => {
   await Promise.all([
     new TicketCreatedListener(natsClient.client).listen(),
     new TicketUpdatedListener(natsClient.client).listen(),
+    new ExpirationCompleteListener(natsClient.client).listen(),
   ]);
 
   console.log("Ticket listeners started");
@@ -90,7 +95,6 @@ const startTicketListeners = async () => {
 const setupGracefulShutdown = (): void => {
   const closeGracefully = async (): Promise<void> => {
     console.log("Shutting down orders service...");
-
     try {
       if (server) {
         await new Promise<void>((resolve, reject) => {
@@ -102,14 +106,12 @@ const setupGracefulShutdown = (): void => {
       }
       await natsClient.drain();
       await mongoose.connection.close();
-
       process.exit(0);
     } catch (err) {
       console.error("Error during shutdown:", err);
       process.exit(1);
     }
   };
-
   process.on("SIGINT", () => void closeGracefully());
   process.on("SIGTERM", () => void closeGracefully());
 };

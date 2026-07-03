@@ -23,16 +23,17 @@ spec:
                 echo "Waiting for nats..."
                 sleep 2
               done
-        - name: wait-for-orders-mongo
-          image: busybox:1.36
+        - name: wait-for-orders-mongo-primary
+          image: mongo
           command:
             - sh
             - -c
             - |
-              until nc -z orders-mongo-srv 27017; do
-                echo "Waiting for orders-mongo..."
+              until mongosh --host orders-mongo-srv --quiet --eval "try { const h = db.adminCommand({ hello: 1 }); quit(h.isWritablePrimary ? 0 : 1); } catch (e) { quit(1); }" > /dev/null 2>&1; do
+                echo "Waiting for orders-mongo PRIMARY..."
                 sleep 2
               done
+              echo "orders-mongo is PRIMARY"
       containers:
         - name: orders
           image: ahsan2882/orders
@@ -47,13 +48,15 @@ spec:
             - name: NODE_ENV
               value: "development"
             - name: ORDERS_MONGO_URI
-              value: "mongodb://orders-mongo-srv:27017/orders"
+              value: "mongodb://orders-mongo-srv:27017/orders?replicaSet=rs0"
           startupProbe:
             httpGet:
               path: /healthz
               port: 3000
             periodSeconds: 5
-            failureThreshold: 30
+            failureThreshold: 60
+            timeoutSeconds: 5
+
           readinessProbe:
             httpGet:
               path: /readyz
@@ -61,13 +64,16 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
             failureThreshold: 24
+            timeoutSeconds: 5
+
           livenessProbe:
             httpGet:
               path: /healthz
               port: 3000
-            initialDelaySeconds: 20
+            initialDelaySeconds: 30
             periodSeconds: 10
-            failureThreshold: 3
+            failureThreshold: 6
+            timeoutSeconds: 5
 ---
 apiVersion: v1
 kind: Service

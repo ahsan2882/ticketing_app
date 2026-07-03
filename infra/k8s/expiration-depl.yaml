@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expiration-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: expiration
+  template:
+    metadata:
+      labels:
+        app: expiration
+    spec:
+      initContainers:
+        - name: wait-for-expiration-redis
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z expiration-redis-srv 6379; do
+                echo "Waiting for expiration-redis..."
+                sleep 2
+              done
+              echo "expiration redis is ready"
+      containers:
+        - name: expiration
+          image: ahsan2882/expiration
+          env:
+            - name: NATS_URL
+              value: "nats://nats-srv:4222"
+            - name: NODE_ENV
+              value: "development"
+            - name: EXPIRATION_REDIS_HOST
+              value: expiration-redis-srv
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
