@@ -1,6 +1,6 @@
 import { Listener, SUBJECTS, type OrderCreatedEvent } from "@venuepass/common";
 import type { JsMsg, NatsConnection } from "nats";
-import { expirationQueue } from "../../queues/expiration-queue";
+import { getExpirationQueue } from "../../queues/expiration-queue";
 
 export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
   readonly subject = SUBJECTS.OrderCreated;
@@ -15,7 +15,11 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
   }
 
   async onMessage(data: OrderCreatedEvent["data"], msg: JsMsg): Promise<void> {
-    const delay = new Date(data.expiresAt).getTime() - new Date().getTime();
+    const expiresAt = new Date(data.expiresAt).getTime();
+    const now = new Date().getTime();
+    // Compute delay, clamping to zero for already-expired orders
+    const delay = Math.max(0, expiresAt - now);
+    const expirationQueue = getExpirationQueue();
     await expirationQueue.add(
       {
         orderId: data.id,

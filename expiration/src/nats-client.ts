@@ -17,7 +17,7 @@ class NatsClient {
     healthState.setNotReady("nats");
     this._client = await connect({
       servers: [process.env.NATS_URL!], // use nats://nats-srv:4222 inside k8s
-      name: "order-service",
+      name: "expiration-worker-service",
       pingInterval: 5_000,
       maxPingOut: 2,
       waitOnFirstConnect: true,

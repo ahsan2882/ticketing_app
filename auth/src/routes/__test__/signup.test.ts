@@ -470,18 +470,7 @@ describe("signup flow tests", () => {
       })
       .expect(201);
 
-    // Try to register another user with the same email (trimmed version of password)
-    // This should fail because first user already exists with this email
-    await request(app)
-      .post("/api/users/signup")
-      .send({
-        email: "trimcheck2@test.com",
-        password: "abcd",
-        name: "Test Test",
-      })
-      .expect(400);
-
-    // Verify errors contain user-already-exists message
+    // Try to register another user with the same email - should fail with 400
     const response = await request(app)
       .post("/api/users/signup")
       .send({
@@ -490,6 +479,8 @@ describe("signup flow tests", () => {
         name: "Test Test",
       })
       .expect(400);
+
+    // Verify errors contain user-already-exists message from the same response
     expect(
       response.body.errors.some((e: any) =>
         e.message.includes("User with this email already exists"),

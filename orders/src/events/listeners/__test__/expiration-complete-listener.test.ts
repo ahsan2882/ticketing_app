@@ -80,7 +80,7 @@ describe("ExpirationCompleteListener", () => {
   });
 
   it("acks the message after successful processing", async () => {
-    const { listener, order, msg, data } = await setup();
+    const { listener, msg, data } = await setup();
 
     await listener.onMessage(data, msg);
 
@@ -100,7 +100,7 @@ describe("ExpirationCompleteListener", () => {
   });
 
   it("does not ack if save() fails", async () => {
-    const { listener, order, msg, data } = await setup();
+    const { listener, msg, data } = await setup();
     jest
       .spyOn(Order.prototype, "save")
       .mockRejectedValueOnce(new Error("db down"));
@@ -108,5 +108,39 @@ describe("ExpirationCompleteListener", () => {
     await expect(listener.onMessage(data, msg)).rejects.toThrow("db down");
 
     expect(msg.ack).not.toHaveBeenCalled();
+  });
+
+  it("acks and skips processing if order is already CANCELLED", async () => {
+    const { listener, order, data, msg } = await setup();
+
+    // Set order to already cancelled (terminal state)
+    order.set({ status: OrderStatus.CANCELLED });
+    await order.save();
+
+    await listener.onMessage(data, msg);
+
+    // Should ack but not call publisher or change status again
+    expect(msg.ack).toHaveBeenCalled();
+    expect(OrderCancelledPublisher.prototype.publish).not.toHaveBeenCalled();
+
+    const updatedOrder = await Order.findById(order.id);
+    expect(updatedOrder!.status).toEqual(OrderStatus.CANCELLED);
+  });
+
+  it("acks and skips processing if order is already COMPLETED", async () => {
+    const { listener, order, data, msg } = await setup();
+
+    // Set order to already paid (terminal state)
+    order.set({ status: OrderStatus.COMPLETED });
+    await order.save();
+
+    await listener.onMessage(data, msg);
+
+    // Should ack but not call publisher or change status again
+    expect(msg.ack).toHaveBeenCalled();
+    expect(OrderCancelledPublisher.prototype.publish).not.toHaveBeenCalled();
+
+    const updatedOrder = await Order.findById(order.id);
+    expect(updatedOrder!.status).toEqual(OrderStatus.COMPLETED);
   });
 });

@@ -29,6 +29,16 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
     if (!order) {
       throw new Error(`Order with ID ${orderId} not found`);
     }
+
+    // Skip processing if the order is already in a terminal state
+    if (
+      order.status === OrderStatus.CANCELLED ||
+      order.status === OrderStatus.COMPLETED
+    ) {
+      msg.ack();
+      return;
+    }
+
     await order.populate("ticket");
     order.set({ status: OrderStatus.CANCELLED });
     await order.save();

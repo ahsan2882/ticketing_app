@@ -39,17 +39,21 @@ const start = async () => {
   } catch (error) {
     healthState.setNotReady("mongo");
     console.error("Error connecting to MongoDB:", error);
+    throw new ServiceConnectionError("Error connecting to MongoDB");
   }
   try {
     await connectNatsClient();
   } catch (error) {
     healthState.setNotReady("nats");
     console.error("Error connecting to NATS:", error);
+    throw new ServiceConnectionError("Error connecting to NATS");
   }
   try {
     await startOrderListeners();
   } catch (error) {
+    healthState.setNotReady("nats");
     console.error("Error starting order listeners:", error);
+    throw new ServiceConnectionError("Error starting order listeners");
   }
 };
 
@@ -92,22 +96,34 @@ const startOrderListeners = async () => {
 const setupGracefulShutdown = () => {
   const closeGracefully = async () => {
     console.log("Shutting down tickets service...");
-    try {
-      if (server) {
+
+    // Isolate each cleanup step to prevent failures from short-circuiting others
+    if (server) {
+      try {
         await new Promise<void>((resolve, reject) => {
           server!.close((err?: Error) => {
             if (err) reject(err);
             else resolve();
           });
         });
+      } catch (err) {
+        console.error("Error closing HTTP server:", err);
       }
-      await natsClient.drain();
-      await mongoose.connection.close();
-      process.exit(0);
-    } catch (err) {
-      console.error("Error during shutdown:", err);
-      process.exit(1);
     }
+
+    try {
+      await natsClient.drain();
+    } catch (err) {
+      console.error("Error draining NATS client:", err);
+    }
+
+    try {
+      await mongoose.connection.close();
+    } catch (err) {
+      console.error("Error closing MongoDB connection:", err);
+    }
+
+    process.exit(0);
   };
   process.on("SIGINT", () => void closeGracefully());
   process.on("SIGTERM", () => void closeGracefully());

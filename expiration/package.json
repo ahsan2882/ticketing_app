@@ -4,6 +4,7 @@
   "description": "Expiration worker service for orders",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
     "start": "tsx watch src/index.ts",
     "test": "jest --watchAll --no-cache"
   },

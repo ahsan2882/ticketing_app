@@ -2088,9 +2088,9 @@ human-signals@^2.1.0:
   integrity sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==
 
 iconv-lite@^0.7.2, iconv-lite@~0.7.0:
-  version "0.7.2"
-  resolved "https://npm.home.arpa/iconv-lite/-/iconv-lite-0.7.2.tgz#d0bdeac3f12b4835b7359c2ad89c422a4d1cc72e"
-  integrity sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw==
+  version "0.7.3"
+  resolved "https://npm.home.arpa/iconv-lite/-/iconv-lite-0.7.3.tgz#84ee12f963e7de50bc01a13e160a078b3b0f415f"
+  integrity sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==
   dependencies:
     safer-buffer ">= 2.1.2 < 3.0.0"
 
@@ -3554,9 +3554,9 @@ tsscmp@1.0.6:
   integrity sha512-LxhtAkPDTkVCMQjt2h6eBVY28KCjikZqZfMcC15YBeNjkgUpdCfBu5HoiOTDu86v6smE8yOjyEktJ8hlbANHQA==
 
 tsx@^4.22.4:
-  version "4.22.5"
-  resolved "https://npm.home.arpa/tsx/-/tsx-4.22.5.tgz#6a8a4134a59766280a7258861bee2f7a82782f3a"
-  integrity sha512-F7JnSfPl5ASt6LqwWyUQ3T8BwN3q0eQEbFMYa2iRWaVQmmudo0d7fRmwM4O002gsvW1bs0yBYioutsAjqLJMvQ==
+  version "4.23.0"
+  resolved "https://npm.home.arpa/tsx/-/tsx-4.23.0.tgz#5393ae8bfce5a9c34db9c00d1353e3d8c3fd3de6"
+  integrity sha512-eUdUIaCr963q2h5u3+QwvYp0+eqPvn+egeqZUm0hwERCqqx1E3kK5ehbGCvqSE5MQAULr67ww0cA3jKc3YkM1w==
   dependencies:
     esbuild "~0.28.0"
   optionalDependencies:

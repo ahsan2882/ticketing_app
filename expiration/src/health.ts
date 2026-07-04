@@ -50,6 +50,18 @@ export class HealthServer {
     this.server.listen(this.port, () => {
       console.log(`Health server listening on port ${this.port}`);
     });
+
+    this.server.on("error", (err: any) => {
+      if (err.code === "EADDRINUSE" || err.code === "EACCES") {
+        const errorMsg =
+          err.code === "EADDRINUSE"
+            ? "Port already in use"
+            : `Permission denied on port ${this.port}`;
+        console.error(`Health server failed to start: ${errorMsg}`);
+      } else {
+        console.error(`Health server error on port ${this.port}:`, err.message);
+      }
+    });
   }
 
   private sendJson(

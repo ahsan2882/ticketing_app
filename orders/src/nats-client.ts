@@ -47,11 +47,7 @@ class NatsClient {
     }
     const jsm = await this._client.jetstreamManager();
     const setupService = new JetStreamSetupService(jsm);
-    try {
-      await setupService.ensureStream();
-    } catch (error) {
-      console.error("Internal Error ensuring JetStream setup:", error);
-    }
+    await setupService.ensureStream();
   }
 
   private monitorConnectionStatus(): void {

@@ -4,6 +4,7 @@
   "description": "Authentication service for VenuePass",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
     "start": "tsx watch src/index.ts",
     "test": "jest --watchAll --no-cache"
   },

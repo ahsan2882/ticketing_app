@@ -39,17 +39,21 @@ const start = async () => {
   } catch (error) {
     healthState.setNotReady("mongo");
     console.error("Error connecting to MongoDB:", error);
+    throw new ServiceConnectionError("Error connecting to MongoDB");
   }
   try {
     await connectNats();
   } catch (error) {
     healthState.setNotReady("nats");
     console.error("Error connecting to NATS:", error);
+    throw new ServiceConnectionError("Error connecting to NATS");
   }
   try {
-    await startTicketListeners();
+    await startListeners();
   } catch (error) {
+    healthState.setNotReady("nats");
     console.error("Error starting ticket listeners:", error);
+    throw new ServiceConnectionError("Error starting listeners");
   }
 };
 
@@ -82,7 +86,7 @@ const connectNats = async () => {
   }
 };
 
-const startTicketListeners = async () => {
+const startListeners = async () => {
   await Promise.all([
     new TicketCreatedListener(natsClient.client).listen(),
     new TicketUpdatedListener(natsClient.client).listen(),
