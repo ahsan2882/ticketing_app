@@ -99,22 +99,35 @@ const startListeners = async () => {
 const setupGracefulShutdown = (): void => {
   const closeGracefully = async (): Promise<void> => {
     console.log("Shutting down orders service...");
-    try {
-      if (server) {
+    let hadError = false;
+    if (server) {
+      try {
         await new Promise<void>((resolve, reject) => {
           server!.close((err?: Error) => {
             if (err) reject(err);
             else resolve();
           });
         });
+      } catch (err) {
+        hadError = true;
+        console.error("Error closing HTTP server:", err);
       }
-      await natsClient.drain();
-      await mongoose.connection.close();
-      process.exit(0);
-    } catch (err) {
-      console.error("Error during shutdown:", err);
-      process.exit(1);
     }
+    try {
+      await natsClient.drain();
+    } catch (err) {
+      hadError = true;
+      console.error("Error draining NATS client:", err);
+    }
+
+    try {
+      await mongoose.connection.close();
+    } catch (err) {
+      hadError = true;
+      console.error("Error closing MongoDB connection:", err);
+    }
+
+    process.exit(hadError ? 1 : 0);
   };
   process.on("SIGINT", () => void closeGracefully());
   process.on("SIGTERM", () => void closeGracefully());

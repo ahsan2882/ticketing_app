@@ -96,8 +96,7 @@ const startOrderListeners = async () => {
 const setupGracefulShutdown = () => {
   const closeGracefully = async () => {
     console.log("Shutting down tickets service...");
-
-    // Isolate each cleanup step to prevent failures from short-circuiting others
+    let hadError = false;
     if (server) {
       try {
         await new Promise<void>((resolve, reject) => {
@@ -107,23 +106,25 @@ const setupGracefulShutdown = () => {
           });
         });
       } catch (err) {
+        hadError = true;
         console.error("Error closing HTTP server:", err);
       }
     }
-
     try {
       await natsClient.drain();
     } catch (err) {
+      hadError = true;
       console.error("Error draining NATS client:", err);
     }
 
     try {
       await mongoose.connection.close();
     } catch (err) {
+      hadError = true;
       console.error("Error closing MongoDB connection:", err);
     }
 
-    process.exit(0);
+    process.exit(hadError ? 1 : 0);
   };
   process.on("SIGINT", () => void closeGracefully());
   process.on("SIGTERM", () => void closeGracefully());

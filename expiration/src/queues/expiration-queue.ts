@@ -56,6 +56,14 @@ export const initializeExpirationQueue = async (
       console.error("Redis/Bull queue error:", err);
     });
 
+    expirationQueue.on("failed", (job, err) => {
+      console.error(
+        `Expiration job for orderId ${job.data.orderId} failed permanently after ${job.attemptsMade} attempts:`,
+        err,
+      );
+      // TODO: surface to alerting/DLQ so stuck orders are not silently lost
+    });
+
     expirationQueue.client.on("ready", () => {
       healthState.setReady("redis");
       console.log("Redis client ready");
