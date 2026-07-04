@@ -35,6 +35,14 @@ build:
         manual:
           - src: "src/**/*.ts"
             dest: .
+    - image: ahsan2882/expiration
+      context: expiration
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
     - image: ahsan2882/client
       context: client
       docker:

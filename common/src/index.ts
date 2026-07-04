@@ -7,6 +7,7 @@ export { UnauthorizedError } from "./errors/unauthorized-error";
 
 export { Listener } from "./events/base/base-listener";
 export { Publisher } from "./events/base/base-publisher";
+export type { ExpirationCompleteEvent } from "./events/expiration/expiration-complete-event";
 export {
   JetStreamSetupService,
   type ConsumerConfig,

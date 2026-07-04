@@ -2,7 +2,10 @@ import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
 import request from "supertest";
 import { app } from "../../app";
 import { TicketCreatedPublisher } from "../../events/publishers/ticket-created-publisher";
-import { Ticket, type CreateTicketBodyIngress } from "../../models/ticket.model";
+import {
+  Ticket,
+  type CreateTicketBodyIngress,
+} from "../../models/ticket.model";
 
 jest.mock("../../events/publishers/ticket-created-publisher");
 
@@ -256,9 +259,7 @@ describe("create tickets — eventDate validation", () => {
     await request(app)
       .post("/api/tickets")
       .set("Cookie", cookie)
-      .send(
-        validTicketPayload({ eventDate: "2026-12-15T19:00:00.000Z" }),
-      )
+      .send(validTicketPayload({ eventDate: "2026-12-15T19:00:00.000Z" }))
       .expect(201);
   });
 });

@@ -190,7 +190,11 @@ describe("signin flow - ", () => {
     // First register a user with a password that has trailing whitespace
     await request(app)
       .post("/api/users/signup")
-      .send({ email: "trailing-whitespace@test.com", password: "validpass ", name: "Test Test" })
+      .send({
+        email: "trailing-whitespace@test.com",
+        password: "validpass ",
+        name: "Test Test",
+      })
       .expect(201);
 
     // Signin with EXACT same password including trailing whitespace succeeds

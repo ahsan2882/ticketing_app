@@ -35,12 +35,7 @@ export class JetStreamSetupService {
         config.durableName,
       );
     } catch (err) {
-      // Check specifically for 404 Not Found
-      const isNotFound =
-        err && typeof err === "object" && "code" in err && err.code === 404;
-
-      if (!isNotFound) {
-        // Rethrow non-404 errors (network, auth, 500, etc.)
+      if (!this.isConsumerNotFoundError(err)) {
         throw err;
       }
       // Consumer does not exist - create it
@@ -88,4 +83,25 @@ export class JetStreamSetupService {
   //     console.error("Error creating dead letter stream", error);
   //   }
   // }
+
+  private isConsumerNotFoundError(error: unknown): boolean {
+    if (!error || typeof error !== "object") {
+      return false;
+    }
+
+    const natsError = error as {
+      code?: string | number;
+      api_error?: {
+        code?: number;
+        err_code?: number;
+        description?: string;
+      };
+    };
+
+    return (
+      Number(natsError.code) === 404 ||
+      natsError.api_error?.code === 404 ||
+      natsError.api_error?.err_code === 10014
+    );
+  }
 }

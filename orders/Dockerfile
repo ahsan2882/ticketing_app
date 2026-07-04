@@ -10,18 +10,22 @@ ENV NODE_OPTIONS=--use-openssl-ca
 
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
-WORKDIR /app
-
 RUN npm install -g corepack && corepack enable
 
-COPY package.json ./
+RUN mkdir -p /app && chown node:node /app
 
-COPY yarn.lock ./
+USER node
 
-COPY .npmrc ./
+WORKDIR /app
+
+COPY --chown=node:node package.json ./
+
+COPY --chown=node:node yarn.lock ./
+
+COPY --chown=node:node .npmrc ./
 
 RUN yarn install --frozen-lockfile --production=true
 
-COPY . .
+COPY --chown=node:node . .
 
 CMD ["yarn", "start"]

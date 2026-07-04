@@ -5,6 +5,7 @@ export enum SUBJECTS {
   TicketUpdated = "ticket.updated",
   OrderCreated = "order.created",
   OrderCancelled = "order.cancelled",
+  ExpirationComplete = "expiration.complete",
 }
 
 // TODO: Posion Queue Implementation
