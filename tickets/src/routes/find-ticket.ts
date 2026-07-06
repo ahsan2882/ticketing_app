@@ -21,7 +21,7 @@ router.get("/api/tickets/:id", async (req: Request, res: Response) => {
   const fields = req.currentUser ? PRIVATE_FIELDS : PUBLIC_FIELDS;
   const ticket = await Ticket.findById(ticketId).select(fields);
   if (!ticket) {
-    throw new NotFoundError();
+    throw new NotFoundError("Ticket not found");
   }
   res.send(ticket);
 });

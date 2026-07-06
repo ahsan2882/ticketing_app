@@ -45,7 +45,7 @@ app.get("/readyz", (_req, res) => {
 });
 
 app.all("/{*splat}", async (req, res) => {
-  throw new NotFoundError();
+  throw new NotFoundError("Route not found in auth service");
 });
 
 app.use(errorHandler);

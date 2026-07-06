@@ -1,6 +1,6 @@
 "use client";
 
-import { ButtonProps } from "@/models/button.model";
+import type { ButtonProps } from "@/models/button.model";
 import Link from "next/link";
 import ArrowRightIcon from "./icons/arrow-right-svg";
 

@@ -8,6 +8,8 @@ import {
 import type { JsMsg, NatsConnection } from "nats";
 import { Order } from "../../models/order.model";
 import { Ticket } from "../../models/ticket.model";
+import { natsClient } from "../../nats-client";
+import { OrderAwaitingPaymentPublisher } from "../publishers/order-awaiting-payment-publisher";
 
 export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
   readonly subject = SUBJECTS.TicketUpdated;
@@ -23,7 +25,6 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
 
   async onMessage(data: TicketUpdatedEvent["data"], msg: JsMsg): Promise<void> {
     const { id, title, price, version, status } = data;
-
     // Fetch current ticket state with single DB query for performance
     const ticket = await Ticket.findById(id);
     if (!ticket) {
@@ -63,8 +64,22 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
       if (status === TicketStatus.RESERVED) {
         await Order.updateOne(
           { ticket: id, status: OrderStatus.CREATED },
-          { $set: { status: OrderStatus.AWAITING_PAYMENT } },
+          {
+            $set: { status: OrderStatus.AWAITING_PAYMENT },
+            $inc: { version: 1 },
+          },
         );
+        const order = await Order.find({ ticket: id }).populate("ticket");
+        if (!order) {
+          throw new Error(`Order ${id} not found`);
+        }
+        await new OrderAwaitingPaymentPublisher(natsClient.client).publish({
+          id: order[0]!.id,
+          userId: order[0]!.userId,
+          status: order[0]!.status,
+          version: order[0]!.version,
+          ticket: order[0]!.ticket,
+        });
       }
       console.log(`Received event #${msg.seq}:`, data);
       msg.ack();

@@ -1,5 +1,6 @@
 import {
   EventType,
+  OrderStatus,
   TicketCategory,
   TicketStatus,
   type OrderCancelledEvent,
@@ -42,6 +43,7 @@ const setUp = async () => {
     id: orderId,
     version: 0,
     ticket: { id: ticket.id },
+    status: OrderStatus.CANCELLED,
   };
 
   // @ts-ignore
@@ -110,11 +112,13 @@ describe("order cancelled listener", () => {
       id: orderA,
       version: 0,
       ticket: { id: ticket.id },
+      status: OrderStatus.CANCELLED,
     };
     const dataB: OrderCancelledEvent["data"] = {
       id: new mongoose.Types.ObjectId().toHexString(),
       version: 0,
       ticket: { id: ticket.id },
+      status: OrderStatus.CANCELLED,
     };
 
     // @ts-ignore
@@ -147,6 +151,7 @@ describe("order cancelled listener", () => {
       id: new mongoose.Types.ObjectId().toHexString(),
       version: 0,
       ticket: { id: ticket.id },
+      status: OrderStatus.CANCELLED,
     };
     // @ts-ignore
     const msg: JsMsg = { ack: jest.fn() };
@@ -244,12 +249,14 @@ describe("order cancelled listener", () => {
       id: orderA,
       version: 0,
       ticket: { id: ticket.id },
+      status: OrderStatus.CANCELLED,
     };
     // a stale cancellation for an order (B) that never actually held this ticket
     const dataB: OrderCancelledEvent["data"] = {
       id: new mongoose.Types.ObjectId().toHexString(),
       version: 0,
       ticket: { id: ticket.id },
+      status: OrderStatus.CANCELLED,
     };
 
     // @ts-ignore

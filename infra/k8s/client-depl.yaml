@@ -43,6 +43,16 @@ spec:
                 echo "Waiting for tickets..."
                 sleep 2
               done
+        - name: wait-for-payments
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z payments-srv 3000; do
+                echo "Waiting for payments..."
+                sleep 2
+              done
       containers:
         - name: client
           image: ahsan2882/client

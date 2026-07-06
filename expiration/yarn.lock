@@ -1081,10 +1081,10 @@
   resolved "https://npm.home.arpa/@unrs/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-1.12.2.tgz#72da0da48d72b1e87831b9c0308931d3f4669027"
   integrity sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==
 
-"@venuepass/common@^1.0.59":
-  version "1.0.59"
-  resolved "https://npm.home.arpa/@venuepass/common/-/common-1.0.59.tgz#e4aacf15430d39d363a2781509408c7fe2df0342"
-  integrity sha512-UBhwS/ajM0b8Fc9J8AAQbkAwJ8fCxjmVIzjh/FiB6g68996a06C7zARisV6ZtDUXJzBVWZZs9WE32ITfuQysbA==
+"@venuepass/common@^1.0.65":
+  version "1.0.65"
+  resolved "https://npm.home.arpa/@venuepass/common/-/common-1.0.65.tgz#180188dc3392bb41278a7fdd735700c79ab0de02"
+  integrity sha512-SKFMYS6koizX3RNMIfKcdC/JcsM581dzfuEBS/Au9QFS9/hC8oNc9nniu364NaCeL4Fbm0X1LO3s0m5plg6gUQ==
   dependencies:
     "@types/cookie-session" "^2.0.49"
     "@types/express" "^5.0.6"
@@ -1219,9 +1219,9 @@ balanced-match@^1.0.0:
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
 baseline-browser-mapping@^2.10.38:
-  version "2.10.41"
-  resolved "https://npm.home.arpa/baseline-browser-mapping/-/baseline-browser-mapping-2.10.41.tgz#86738e4aafb4392a32672642ddd092c0c2f80161"
-  integrity sha512-WwS7MHhqGHHlaVsqRZnhvCEMS0owDX+SxRlve7JkuH7My1Ara3ZriTmCQupPfYjxMZ8I/tgxtJYr2t7taHaH4A==
+  version "2.10.42"
+  resolved "https://npm.home.arpa/baseline-browser-mapping/-/baseline-browser-mapping-2.10.42.tgz#195dcc76baa269a497f0b07decace169fee9ac58"
+  integrity sha512-c/jurFrDLyui7o1J86yLkRu4LMsTYcBohveus7/I2Hzdn9KIP2bdJPTue/lR1KH46enoPbD77GKeSYNdyPoD3Q==
 
 body-parser@^2.2.1:
   version "2.3.0"
@@ -1338,9 +1338,9 @@ camelcase@^6.3.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001799:
-  version "1.0.30001800"
-  resolved "https://npm.home.arpa/caniuse-lite/-/caniuse-lite-1.0.30001800.tgz#b896c773e1c39400809415162bb5320371291b36"
-  integrity sha512-MMHtuAz9Ys840zAY5F4k6fV5GaivZ9sPk+nz0mY+GYVzRBnYkN0mpqkSR92oWRQ19yQWo4HvBV/FnC16AJX8MA==
+  version "1.0.30001802"
+  resolved "https://npm.home.arpa/caniuse-lite/-/caniuse-lite-1.0.30001802.tgz#2671fb13d468930586c56ffa80feb1c51e18ec69"
+  integrity sha512-vmv8ub2xwTNmljSKf82mtCk5JH7hC+YgzLj3P5zotvA0tPQ9016tdNNOG8WRca1IxOnhSsivB+J0z5FeE5LOUw==
 
 chalk@^4.1.2:
   version "4.1.2"
@@ -1541,9 +1541,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.5.376:
-  version "1.5.385"
-  resolved "https://npm.home.arpa/electron-to-chromium/-/electron-to-chromium-1.5.385.tgz#fbb900d4ddde6fab4651f37de6c1659a070bc68d"
-  integrity sha512-78sa/M08MNAYHQfjoWMvOlKQqZ0ElhSm/L5HNUc96VZ3b+KvDVnngFm8sYQy0XrhTRgAhggHr5abA7yTvRdo4Q==
+  version "1.5.387"
+  resolved "https://npm.home.arpa/electron-to-chromium/-/electron-to-chromium-1.5.387.tgz#d3ce821b0a37af5a46e2d2a33379ecfa16303636"
+  integrity sha512-TaxwufTFDufvPEoXdhwVrA3UdFWBeWGkYoJ1K8ldF1xe6gKfth6iRNS5lTQ5JPNOHdGQm8PT1QYKUqFLCiUefQ==
 
 emittery@^0.13.1:
   version "0.13.1"

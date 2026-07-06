@@ -4,7 +4,7 @@
   "description": "Authentication service for VenuePass",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "tsx watch src/index.ts",
     "test": "jest --watchAll --no-cache"
   },
@@ -13,6 +13,9 @@
     "testEnvironment": "node",
     "setupFilesAfterEnv": [
       "./src/test/setup.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "build/"
     ]
   },
   "keywords": [],
@@ -23,7 +26,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.0.1",
-    "@venuepass/common": "^1.0.59",
+    "@venuepass/common": "^1.0.65",
     "cookie-session": "^2.1.1",
     "express": "^5.2.1",
     "express-validator": "^7.3.2",

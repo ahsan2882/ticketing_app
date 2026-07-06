@@ -2,7 +2,6 @@ import { currentUser, errorHandler, NotFoundError } from "@venuepass/common";
 import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
-
 import { healthState } from "./health";
 import { createTicketRouter } from "./routes/create-ticket";
 import { findAllTicketRouter } from "./routes/find-all-tickets";
@@ -53,7 +52,7 @@ app.get("/readyz", (_req, res) => {
 });
 
 app.all("/{*splat}", async (req, res) => {
-  throw new NotFoundError();
+  throw new NotFoundError("Route not found in tickets service");
 });
 
 app.use(errorHandler);

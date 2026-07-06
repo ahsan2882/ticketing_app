@@ -1,5 +1,5 @@
 "use client";
-import { FormFieldProps } from "@/models/form-field.model";
+import type { FormFieldProps } from "@/models/form-field.model";
 
 export default function FormField({
   label,
