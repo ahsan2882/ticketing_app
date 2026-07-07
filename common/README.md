@@ -325,6 +325,7 @@ const STREAM_NAME = "EVENTS";
 | `SUBJECTS.OrderCancelled`       | `order.cancelled`        |
 | `SUBJECTS.OrderCompleted`       | `order.completed`        |
 | `SUBJECTS.PaymentCleared`       | `payment.cleared`        |
+| `SUBJECTS.PaymentRefund`        | `payment.refund`         |
 | `SUBJECTS.TicketCreated`        | `ticket.created`         |
 | `SUBJECTS.TicketUpdated`        | `ticket.updated`         |
 
@@ -578,7 +579,6 @@ enum OrderStatus {
   AWAITING_PAYMENT = "awaiting_payment",
   COMPLETED = "completed",
   CANCELLED = "cancelled",
-  PAYMENT_STARTED = "payment_started",
 }
 ```
 
@@ -767,7 +767,7 @@ MIT
 
 ---
 
-**Version**: <!-- PACKAGE_VERSION -->1.0.66<!-- /PACKAGE_VERSION -->
+**Version**: <!-- PACKAGE_VERSION -->1.0.67<!-- /PACKAGE_VERSION -->
 
 **Author**: ahsan2882
 
