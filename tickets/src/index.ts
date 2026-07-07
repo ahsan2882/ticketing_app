@@ -46,7 +46,7 @@ const start = async () => {
   } catch (error) {
     healthState.setNotReady("nats");
     console.error("Error connecting to NATS:", error);
-    throw new ServiceConnectionError("Error connecting to NATS");
+    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
   }
   try {
     await startOrderListeners();
@@ -57,7 +57,7 @@ const start = async () => {
   }
 };
 
-const connectMongo = async (retries = 10) => {
+const connectMongo = async () => {
   mongoose.connection.on("connected", () => {
     healthState.setReady("mongo");
     console.log("Connected to MongoDB");
@@ -76,12 +76,8 @@ const connectMongo = async (retries = 10) => {
   await mongoose.connect(process.env.TICKETS_MONGO_URI!);
 };
 
-const connectNatsClient = async (retries = 10) => {
-  try {
-    await natsClient.connect();
-  } catch (error) {
-    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
-  }
+const connectNatsClient = async () => {
+  await natsClient.connect();
 };
 
 const startOrderListeners = async () => {

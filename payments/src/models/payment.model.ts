@@ -17,7 +17,7 @@ interface PaymentModel extends mongoose.Model<PaymentDoc> {
 const paymentSchema = new mongoose.Schema(
   {
     orderId: { type: String, required: true },
-    stripeId: { type: String, required: true },
+    stripeId: { type: String, required: true, unique: true },
   },
   {
     toJSON: {
@@ -38,4 +38,4 @@ const Payment = mongoose.model<PaymentDoc, PaymentModel>(
   paymentSchema,
 );
 
-export { Payment };
+export { Payment, type PaymentDoc };

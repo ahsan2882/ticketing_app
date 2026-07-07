@@ -167,13 +167,9 @@ describe("stripe webhook — idempotency", () => {
     expect(PaymentClearedPublisher.prototype.publish).not.toHaveBeenCalled();
   });
 
-  // NOTE: this test documents the CURRENT behavior of the handler, not necessarily
-  // the desired behavior. The handler never sets `order.status` to COMPLETED itself
-  // (only `paymentStatus`), so the guard above only helps if some other process
-  // (e.g. an OrderUpdatedListener reacting to orders-service) updates `status` first.
-  // Absent that, redelivery of the same Stripe event before that round-trip completes
-  // will create a second Payment record and republish PaymentClearedEvent.
-  it("creates a duplicate Payment and republishes on redelivery before order.status becomes COMPLETED", async () => {
+  // NOTE: updated test after fixing idempotency bug. Now verifies that redelivery
+  // of the same Stripe event is properly deduplicated by catching duplicate key errors.
+  it("deduplicates on redelivery and does not create duplicate Payments", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const order = await createOrder(userId); // status stays AWAITING_PAYMENT
 
@@ -186,7 +182,7 @@ describe("stripe webhook — idempotency", () => {
     await sendWebhook({ irrelevant: true }).expect(200);
 
     const payments = await Payment.find({ orderId: order.id });
-    expect(payments).toHaveLength(2);
-    expect(PaymentClearedPublisher.prototype.publish).toHaveBeenCalledTimes(2);
+    expect(payments).toHaveLength(1); // Only one Payment due to idempotency check
+    expect(PaymentClearedPublisher.prototype.publish).toHaveBeenCalledTimes(1);
   });
 });

@@ -2,6 +2,7 @@ import { currentUser, errorHandler, NotFoundError } from "@venuepass/common";
 import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
+import helmet from "helmet";
 import { healthState } from "./health";
 import { createPaymentRouter } from "./routes/create-payment";
 import { stripeWebhookRouter } from "./routes/stripe-webhook";
@@ -9,6 +10,8 @@ import { stripeWebhookRouter } from "./routes/stripe-webhook";
 const app = express();
 app.set("trust proxy", true);
 
+// Security headers middleware - mount before routes
+app.use(helmet());
 app.use(stripeWebhookRouter);
 
 app.use(bodyParser.json());

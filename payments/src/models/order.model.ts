@@ -6,6 +6,7 @@ interface OrderAttrs {
   userId: string;
   price: number;
   status: OrderStatus;
+  stripeId?: string;
 }
 
 interface OrderDoc extends mongoose.Document {
@@ -14,6 +15,7 @@ interface OrderDoc extends mongoose.Document {
   userId: string;
   price: number;
   status: OrderStatus;
+  stripeId?: string;
 }
 
 interface OrderModel extends mongoose.Model<OrderDoc> {
@@ -29,6 +31,7 @@ const orderSchema = new mongoose.Schema(
       enum: Object.values(OrderStatus),
       required: true,
     },
+    stripeId: { type: String },
   },
   {
     optimisticConcurrency: true,

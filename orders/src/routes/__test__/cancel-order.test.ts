@@ -346,7 +346,7 @@ describe("cancel order - successful cancellation", () => {
     expect(publishedEvent.ticket.title).toBeUndefined();
   });
 
-  it("does not include order status in the published event payload", async () => {
+  it("does include order status in the published event payload", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const cookie = await global.signin(userId);
     const ticket = await createTicket();
@@ -362,7 +362,8 @@ describe("cancel order - successful cancellation", () => {
       OrderCancelledPublisher.prototype.publish as jest.Mock
     ).mock.calls[0][0];
 
-    expect(publishedEvent.status).toBeUndefined();
+    expect(publishedEvent.status).toBeDefined();
+    expect(publishedEvent.status).toBe(OrderStatus.CANCELLED);
   });
 
   it("only cancels the targeted order, leaving the user's other orders untouched", async () => {

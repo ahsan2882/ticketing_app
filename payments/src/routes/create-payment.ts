@@ -32,6 +32,7 @@ router.post(
     if (!order) {
       throw new NotFoundError("Order not found");
     }
+
     if (order.userId !== req.currentUser!.id) {
       throw new UnauthorizedError();
     }
@@ -41,16 +42,36 @@ router.post(
     if (order.status === OrderStatus.COMPLETED) {
       throw new BadRequestError("Order has already been paid");
     }
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(order.price * 100),
-      currency: "usd",
-      payment_method_types: ["card"],
-      description: `Payment for order ${orderId}`,
-      metadata: {
-        orderId,
-        userId: req.currentUser!.id,
+    if (order.stripeId) {
+      const existingIntent = await stripe.paymentIntents.retrieve(
+        order.stripeId,
+      );
+      if (
+        existingIntent.status !== "canceled" &&
+        existingIntent.status !== "succeeded"
+      ) {
+        res.status(201).send({ clientSecret: existingIntent.client_secret });
+        return;
+      }
+    }
+    const idempotencyKey = `payment-intent-order-${orderId}`;
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: Math.round(order.price * 100),
+        currency: "usd",
+        payment_method_types: ["card"],
+        description: `Payment for order ${orderId}`,
+        metadata: {
+          orderId,
+          userId: req.currentUser!.id,
+        },
       },
-    });
+      { idempotencyKey },
+    );
+    await Order.updateOne(
+      { _id: orderId },
+      { $set: { stripeId: paymentIntent.id } },
+    );
     res.status(201).send({ clientSecret: paymentIntent.client_secret });
   },
 );

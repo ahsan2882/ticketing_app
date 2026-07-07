@@ -1,0 +1,5 @@
+review:
+  path_filters:
+    - "!**/yarn.lock"
+    - "!**/*.lock"
+    - "!**/*.json"

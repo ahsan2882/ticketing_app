@@ -47,7 +47,7 @@ const start = async () => {
   } catch (error) {
     healthState.setNotReady("nats");
     console.error("Error connecting to NATS:", error);
-    throw new ServiceConnectionError("Error connecting to NATS");
+    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
   }
   try {
     await startListeners();
@@ -80,11 +80,7 @@ const connectMongo = async () => {
 };
 
 const connectNats = async () => {
-  try {
-    await natsClient.connect();
-  } catch (error) {
-    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
-  }
+  await natsClient.connect();
 };
 
 const startListeners = async () => {

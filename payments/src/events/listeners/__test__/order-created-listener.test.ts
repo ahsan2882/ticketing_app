@@ -5,7 +5,7 @@ import { Order } from "../../../models/order.model";
 import { natsClient } from "../../../nats-client";
 import { OrderCreatedListener } from "../order-created-listener";
 
-const setup = () => {
+const setup = async () => {
   const client = {} as any;
   const listener = new OrderCreatedListener(client);
 
@@ -77,10 +77,10 @@ describe("OrderCreatedListener", () => {
     expect(msg.ack).toHaveBeenCalled();
   });
 
-  it("does not ack if save() fails", async () => {
+  it("does not ack if the DB write fails", async () => {
     const { listener, data, msg } = await setup();
     jest
-      .spyOn(Order.prototype, "save")
+      .spyOn(Order, "findOneAndUpdate")
       .mockRejectedValueOnce(new Error("db down"));
 
     await expect(listener.onMessage(data, msg)).rejects.toThrow("db down");
@@ -88,13 +88,15 @@ describe("OrderCreatedListener", () => {
     expect(msg.ack).not.toHaveBeenCalled();
   });
 
-  it("throws if an order with the same id already exists", async () => {
+  it("is idempotent when the same event is redelivered", async () => {
     const { listener, data, msg } = await setup();
 
     await listener.onMessage(data, msg);
-    (msg.ack as jest.Mock).mockClear();
+    await listener.onMessage(data, msg); // simulate redelivery
 
-    await expect(listener.onMessage(data, msg)).rejects.toThrow();
-    expect(msg.ack).not.toHaveBeenCalled();
+    const orders = await Order.find({ _id: data.id });
+    expect(orders).toHaveLength(1);
+    expect(orders[0]!.price).toEqual(data.ticket.price);
+    expect(msg.ack).toHaveBeenCalledTimes(2);
   });
 });

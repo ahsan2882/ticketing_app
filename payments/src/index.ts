@@ -28,6 +28,11 @@ const validateEnv = () => {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error("STRIPE_SECRET_KEY environment variable is not defined");
   }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    throw new Error(
+      "STRIPE_WEBHOOK_SECRET environment variable is not defined",
+    );
+  }
 };
 
 let server: ReturnType<typeof app.listen> | undefined;
@@ -51,7 +56,7 @@ const start = async () => {
   } catch (error) {
     healthState.setNotReady("nats");
     console.error("Error connecting to NATS:", error);
-    throw new ServiceConnectionError("Error connecting to NATS");
+    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
   }
   try {
     await startOrderListeners();
@@ -62,7 +67,7 @@ const start = async () => {
   }
 };
 
-const connectMongo = async (retries = 10) => {
+const connectMongo = async () => {
   mongoose.connection.on("connected", () => {
     healthState.setReady("mongo");
     console.log("Connected to MongoDB");
@@ -81,12 +86,8 @@ const connectMongo = async (retries = 10) => {
   await mongoose.connect(process.env.PAYMENTS_MONGO_URI!);
 };
 
-const connectNatsClient = async (retries = 10) => {
-  try {
-    await natsClient.connect();
-  } catch (error) {
-    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
-  }
+const connectNatsClient = async () => {
+  await natsClient.connect();
 };
 
 const startOrderListeners = async () => {
@@ -102,7 +103,7 @@ const startOrderListeners = async () => {
 
 const setupGracefulShutdown = () => {
   const closeGracefully = async () => {
-    console.log("Shutting down tickets service...");
+    console.log("Shutting down payments service...");
     let hadError = false;
     if (server) {
       try {

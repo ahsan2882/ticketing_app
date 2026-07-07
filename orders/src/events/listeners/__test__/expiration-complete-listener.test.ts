@@ -75,7 +75,7 @@ describe("ExpirationCompleteListener", () => {
     expect(OrderCancelledPublisher.prototype.publish).toHaveBeenCalledWith({
       id: order.id,
       version: updatedOrder!.version,
-      status: order.status,
+      status: OrderStatus.CANCELLED,
       ticket: { id: ticket.id },
     });
   });

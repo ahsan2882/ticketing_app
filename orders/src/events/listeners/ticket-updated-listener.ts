@@ -8,7 +8,6 @@ import {
 import type { JsMsg, NatsConnection } from "nats";
 import { Order } from "../../models/order.model";
 import { Ticket } from "../../models/ticket.model";
-import { natsClient } from "../../nats-client";
 import { OrderAwaitingPaymentPublisher } from "../publishers/order-awaiting-payment-publisher";
 
 export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
@@ -69,16 +68,27 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
             $inc: { version: 1 },
           },
         );
-        const order = await Order.find({ ticket: id }).populate("ticket");
+        const order = await Order.findOne({
+          ticket: id,
+          status: OrderStatus.AWAITING_PAYMENT,
+        }).populate("ticket");
         if (!order) {
-          throw new Error(`Order ${id} not found`);
+          throw new Error(
+            `Order with ticket id and AWAITING_PAYMENT status not found for ticket ${id}`,
+          );
         }
-        await new OrderAwaitingPaymentPublisher(natsClient.client).publish({
-          id: order[0]!.id,
-          userId: order[0]!.userId,
-          status: order[0]!.status,
-          version: order[0]!.version,
-          ticket: order[0]!.ticket,
+        const freshTicket = await Ticket.findById(id);
+        if (!freshTicket) {
+          throw new Error(`Ticket with id ${id} not found after update`);
+        }
+        freshTicket.set({ orderId: order.id });
+        await freshTicket.save();
+        await new OrderAwaitingPaymentPublisher(this.client).publish({
+          id: order.id,
+          userId: order.userId,
+          status: order.status,
+          version: order.version,
+          ticket: order.ticket,
         });
       }
       console.log(`Received event #${msg.seq}:`, data);

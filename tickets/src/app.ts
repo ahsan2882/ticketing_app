@@ -2,6 +2,7 @@ import { currentUser, errorHandler, NotFoundError } from "@venuepass/common";
 import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
+import helmet from "helmet";
 import { healthState } from "./health";
 import { createTicketRouter } from "./routes/create-ticket";
 import { findAllTicketRouter } from "./routes/find-all-tickets";
@@ -10,7 +11,7 @@ import { updateTicketRouter } from "./routes/update-ticket";
 
 const app = express();
 app.set("trust proxy", true);
-
+app.use(helmet());
 app.use(bodyParser.json());
 app.use(
   cookieSession({

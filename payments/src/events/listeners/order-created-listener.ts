@@ -15,13 +15,17 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
   }
 
   async onMessage(data: OrderCreatedEvent["data"], msg: JsMsg): Promise<void> {
-    const order = Order.build({
-      id: data.id,
-      price: data.ticket.price,
-      status: data.status,
-      userId: data.userId,
-    });
-    await order.save();
+    await Order.findOneAndUpdate(
+      { _id: data.id },
+      {
+        $setOnInsert: {
+          price: data.ticket.price,
+          status: data.status,
+          userId: data.userId,
+        },
+      },
+      { upsert: true, setDefaultsOnInsert: true },
+    );
     msg.ack();
   }
 }

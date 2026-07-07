@@ -7,6 +7,7 @@ export enum SUBJECTS {
   OrderCancelled = "order.cancelled",
   OrderCompleted = "order.completed",
   PaymentCleared = "payment.cleared",
+  PaymentRefund = "payment.refund",
   TicketCreated = "ticket.created",
   TicketUpdated = "ticket.updated",
 }
