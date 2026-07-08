@@ -55,7 +55,16 @@ router.post(
             { idempotencyKey: `refund_${paymentIntent.id}` },
           );
         } catch (err) {
-          // Ignore "already refunded" style errors so retries don't loop forever
+          const stripeErr = err as Stripe.errors.StripeError;
+          if (
+            stripeErr?.type === "StripeInvalidRequestError" &&
+            /already.*refund/i.test(stripeErr.message)
+          ) {
+            // Safe no-op — refund already processed on a prior delivery
+            return res.status(200).send({ received: true });
+          }
+          // Let other errors propagate → 500 → Stripe retries the webhook
+          throw err;
         }
         return res.status(200).send({ received: true });
       }

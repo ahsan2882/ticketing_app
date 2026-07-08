@@ -83,12 +83,17 @@ export class TicketUpdatedListener extends Listener<TicketUpdatedEvent> {
                 `Order with ticket id and AWAITING_PAYMENT status not found for ticket ${id}`,
               );
             }
-            const freshTicket = await Ticket.findById(id).session(session);
-            if (!freshTicket) {
-              throw new Error(`Ticket with id ${id} not found after update`);
-            }
-            freshTicket.set({ orderId: order.id });
-            await freshTicket.save({ session });
+            // Plain updateOne, not findById + save() — setting orderId is
+            // bookkeeping, not a real version-worthy state change. The
+            // Ticket.updateOne above already advanced version to n+1 for
+            // this event; reloading and saving the document would bump it
+            // again to n+2 via optimisticConcurrency, desyncing this
+            // read-replica's version from the tickets-service original.
+            await Ticket.updateOne(
+              { _id: id },
+              { $set: { orderId: order.id } },
+              { session },
+            );
 
             publishPayload = {
               id: order.id,

@@ -224,22 +224,29 @@ describe("cancel order - successful cancellation", () => {
     expect(updated!.status).toEqual(OrderStatus.CANCELLED);
   });
 
-  it("is idempotent-ish: cancelling an already-cancelled order still returns 200 and stays cancelled", async () => {
+  it("rejects cancellation of an order already in terminal states", async () => {
     const userId = new mongoose.Types.ObjectId().toHexString();
     const cookie = await global.signin(userId);
-    const ticket = await createTicket();
-    const order = await createOrder(userId, ticket, {
-      status: OrderStatus.CANCELLED,
-    });
+
+    // CANCELLED status - should reject
+    let ticket = await createTicket();
+    let cancelledOrder = await createOrder(userId, ticket, { status: OrderStatus.CANCELLED });
 
     await request(app)
-      .delete(`/api/orders/${order.id}`)
+      .delete(`/api/orders/${cancelledOrder.id}`)
       .set("Cookie", cookie)
       .send()
-      .expect(200);
+      .expect(400);
 
-    const updated = await Order.findById(order.id);
-    expect(updated!.status).toEqual(OrderStatus.CANCELLED);
+    // COMPLETED status - should reject  
+    ticket = await createTicket();
+    let completedOrder = await createOrder(userId, ticket, { status: OrderStatus.COMPLETED });
+
+    await request(app)
+      .delete(`/api/orders/${completedOrder.id}`)
+      .set("Cookie", cookie)
+      .send()
+      .expect(400);
   });
 
   it("calls OrderCancelledPublisher exactly once", async () => {

@@ -37,12 +37,13 @@ const orderSchema = new mongoose.Schema(
     optimisticConcurrency: true,
     toJSON: {
       transform(doc, ret) {
-        const { _id, userId, price, status } = ret;
+        const { _id, userId, price, status, stripeId } = ret;
         return {
           id: _id.toString(),
           userId,
           price,
           status,
+          stripeId,
           version: doc.get("version"),
         };
       },

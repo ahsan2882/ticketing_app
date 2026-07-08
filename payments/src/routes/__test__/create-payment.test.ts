@@ -1,5 +1,5 @@
-import assert from "assert";
 import { OrderStatus } from "@venuepass/common";
+import assert from "assert";
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";
@@ -238,30 +238,46 @@ describe("create payment — Stripe integration", () => {
       .send(validPaymentPayload(order.id))
       .expect(201);
 
-    const calls = stripe.paymentIntents.create.mock.calls;
+    const calls = (stripe.paymentIntents.create as jest.Mock).mock.calls;
     expect(calls).toHaveLength(1);
 
     // The mock call arguments are the function's args array itself
-    assert(calls[0].length === 2, "stripe.paymentIntents.create should be called with 2 arguments");
+    assert(
+      calls[0].length === 2,
+      "stripe.paymentIntents.create should be called with 2 arguments",
+    );
 
     const [config, options] = calls[0];
 
     // First argument: config object
-    assert(config.amount === 4999, `expected amount to be 4999, got ${config.amount}`);
+    assert(
+      config.amount === 4999,
+      `expected amount to be 4999, got ${config.amount}`,
+    );
     assert(config.currency === "usd", "expected currency to be usd");
     assert(
       config.description === `Payment for order ${order.id}`,
       `expected description to match`,
     );
-    assert(config.metadata.orderId === order.id, "expected metadata orderId to match");
-    assert(config.metadata.userId === userId, "expected metadata userId to match");
+    assert(
+      config.metadata.orderId === order.id,
+      "expected metadata orderId to match",
+    );
+    assert(
+      config.metadata.userId === userId,
+      "expected metadata userId to match",
+    );
     assert(
       config.payment_method_types?.[0] === "card",
       "expected payment_method_types to include card",
     );
 
     // Second argument: options object
-    assert(options.idempotencyKey === `payment-intent-order-${order.id}`, "expected idempotencyKey to match");
+    assert(
+      options.idempotencyKey ===
+        `payment-intent-order-${order.id}-v${order.version}`,
+      "expected idempotencyKey to match",
+    );
   });
 
   it("rounds fractional-cent prices to the nearest cent", async () => {
@@ -273,16 +289,22 @@ describe("create payment — Stripe integration", () => {
       .send(validPaymentPayload(order.id))
       .expect(201);
 
-    const calls = stripe.paymentIntents.create.mock.calls;
+    const calls = (stripe.paymentIntents.create as jest.Mock).mock.calls;
     expect(calls).toHaveLength(1);
 
     // The mock call arguments are the function's args array itself
-    assert(calls[0].length === 2, "stripe.paymentIntents.create should be called with 2 arguments");
+    assert(
+      calls[0].length === 2,
+      "stripe.paymentIntents.create should be called with 2 arguments",
+    );
 
     const [config] = calls[0];
 
     // First argument: config object
-    assert(config.amount === 2000, `expected amount to be 2000, got ${config.amount}`);
+    assert(
+      config.amount === 2000,
+      `expected amount to be 2000, got ${config.amount}`,
+    );
   });
 
   it("includes orderId and userId in the PaymentIntent metadata", async () => {
@@ -294,17 +316,26 @@ describe("create payment — Stripe integration", () => {
       .send(validPaymentPayload(order.id))
       .expect(201);
 
-    const calls = stripe.paymentIntents.create.mock.calls;
+    const calls = (stripe.paymentIntents.create as jest.Mock).mock.calls;
     expect(calls).toHaveLength(1);
 
     // The mock call arguments are the function's args array itself
-    assert(calls[0].length === 2, "stripe.paymentIntents.create should be called with 2 arguments");
+    assert(
+      calls[0].length === 2,
+      "stripe.paymentIntents.create should be called with 2 arguments",
+    );
 
     const [config] = calls[0];
 
     // First argument: config object should contain the expected metadata fields
-    assert(config.metadata.orderId === order.id, "expected metadata orderId to match");
-    assert(config.metadata.userId === userId, "expected metadata userId to match");
+    assert(
+      config.metadata.orderId === order.id,
+      "expected metadata orderId to match",
+    );
+    assert(
+      config.metadata.userId === userId,
+      "expected metadata userId to match",
+    );
   });
 
   it("does not call stripe.paymentIntents.create when the order is cancelled", async () => {

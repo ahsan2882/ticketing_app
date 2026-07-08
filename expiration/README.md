@@ -241,7 +241,7 @@ When a job is processed, the queue publishes:
 
 ```ts
 {
-  orderId: job.data.orderId;
+  orderId: job.data.orderId,
 }
 ```
 

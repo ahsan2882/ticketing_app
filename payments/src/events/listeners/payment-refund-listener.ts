@@ -19,16 +19,21 @@ export class PaymentRefundListener extends Listener<PaymentRefundEvent> {
     try {
       // Use an idempotency key to prevent duplicate refunds
       const idempotencyKey = `refund-payment-${data.stripeId}`;
-      await stripe.refunds.create({
-        payment_intent: data.stripeId,
-        idempotency_key: idempotencyKey,
-      });
+      await stripe.refunds.create(
+        {
+          payment_intent: data.stripeId,
+        },
+        { idempotencyKey },
+      );
     } catch (error: any) {
       // Handle duplicate refund attempts gracefully
-      // If the charge is already refunded, ack the message anyway
+      // If the charge is already refunded, ack the message anyway.
+      // Stripe returns this as a top-level invalid_request_error with
+      // code "charge_already_refunded" — not a card_error, and not
+      // nested under .raw.message.
       if (
-        error?.type === "card_error" &&
-        error.raw?.message?.includes("charge_already_refunded")
+        error?.type === "invalid_request_error" &&
+        error?.code === "charge_already_refunded"
       ) {
         console.log("Refund already processed for payment", data.stripeId);
         msg.ack();

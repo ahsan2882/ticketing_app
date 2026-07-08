@@ -30,6 +30,7 @@ const setup = async (initialVersion = 1) => {
   const data = {
     id: order.id,
     version: initialVersion + 1,
+    status: OrderStatus.CANCELLED,
     ticket: { id: ticketId },
   };
 

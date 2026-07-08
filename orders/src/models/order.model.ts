@@ -23,6 +23,7 @@ interface OrderDoc extends mongoose.Document {
   createdAt: Date;
   expiresAt: Date;
   version: number;
+  completedEventSent: boolean;
 }
 
 const orderSchema = new mongoose.Schema(
@@ -46,6 +47,10 @@ const orderSchema = new mongoose.Schema(
     expiresAt: {
       type: mongoose.Schema.Types.Date,
       required: true,
+    },
+    completedEventSent: {
+      type: Boolean,
+      default: false,
     },
   },
   {

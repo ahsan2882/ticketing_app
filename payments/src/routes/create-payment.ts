@@ -84,26 +84,16 @@ router.post(
         const existingIntent = await stripe.paymentIntents.retrieve(
           error.raw.id,
         );
-        if (existingIntent.status !== "canceled" && existingIntent.status !== "succeeded") {
+        if (
+          existingIntent.status !== "canceled" &&
+          existingIntent.status !== "succeeded"
+        ) {
           res.status(201).send({ clientSecret: existingIntent.client_secret });
           return;
         }
       }
       throw error;
     }
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: Math.round(order.price * 100),
-        currency: "usd",
-        payment_method_types: ["card"],
-        description: `Payment for order ${orderId}`,
-        metadata: {
-          orderId,
-          userId: req.currentUser!.id,
-        },
-      },
-      { idempotencyKey },
-    );
     await Order.updateOne(
       { _id: orderId },
       { $set: { stripeId: paymentIntent.id } },

@@ -46,8 +46,21 @@ export class PaymentClearedListener extends Listener<PaymentClearedEvent> {
       return;
     }
 
-    // Skip processing for COMPLETED orders (already finalized, no refund needed)
+    // Skip processing for COMPLETED orders (already finalized), unless the
+    // OrderCompleted event was never confirmed published — e.g. the process
+    // crashed or publish() threw after order.save() but before ack(). In
+    // that case the DB already reflects COMPLETED, but the rest of the
+    // saga never heard about it, so we must republish rather than skip.
     if (order.status === OrderStatus.COMPLETED) {
+      if (!order.completedEventSent) {
+        await new OrderCompletedPublisher(this.client).publish({
+          id: order.id,
+          version: order.version,
+          status: order.status,
+        });
+        order.set({ completedEventSent: true });
+        await order.save();
+      }
       msg.ack();
       return;
     }
@@ -77,6 +90,10 @@ export class PaymentClearedListener extends Listener<PaymentClearedEvent> {
       version: order.version,
       status: order.status,
     });
+    await Order.updateOne(
+      { _id: order.id },
+      { $set: { completedEventSent: true } },
+    );
     msg.ack();
   }
 }

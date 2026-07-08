@@ -39,7 +39,7 @@ export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
       }
       if (existing.version >= data.version) {
         // genuinely stale/duplicate — safe no-op
-        console.warn(
+        console.log(
           `OrderCancelledListener no-op: order ${orderId} already at version ${existing.version}`,
         );
         msg.ack();
