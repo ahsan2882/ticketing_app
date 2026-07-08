@@ -5,6 +5,7 @@ import { OrderAwaitingPaymentListener } from "./events/listeners/order-awaiting-
 import { OrderCancelledListener } from "./events/listeners/order-cancelled-listener";
 import { OrderCompletedListener } from "./events/listeners/order-completed-listener";
 import { OrderCreatedListener } from "./events/listeners/order-created-listener";
+import { PaymentRefundListener } from "./events/listeners/payment-refund-listener";
 import { healthState } from "./health";
 import { natsClient } from "./nats-client";
 
@@ -96,6 +97,7 @@ const startOrderListeners = async () => {
     new OrderCancelledListener(natsClient.client).listen(),
     new OrderAwaitingPaymentListener(natsClient.client).listen(),
     new OrderCompletedListener(natsClient.client).listen(),
+    new PaymentRefundListener(natsClient.client).listen(),
   ]);
 
   console.log("Order listeners started");
@@ -141,5 +143,5 @@ const setupGracefulShutdown = () => {
 void start().catch((err) => {
   console.error("Fatal startup error:", err);
 
-  throw new ServiceConnectionError("Error starting tickets service");
+  throw new ServiceConnectionError("Error starting payments service");
 });

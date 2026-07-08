@@ -1,8 +1,8 @@
 import { HealthState } from "@venuepass/common";
 
-type TicketsHealthCheck = "mongo" | "nats";
+type PaymentsHealthCheck = "mongo" | "nats";
 
-export const healthState = new HealthState<TicketsHealthCheck>([
+export const healthState = new HealthState<PaymentsHealthCheck>([
   "mongo",
   "nats",
 ]);

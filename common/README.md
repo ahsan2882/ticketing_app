@@ -184,8 +184,7 @@ common/
  ├── tsconfig.json           # TypeScript config (strict mode, ES2022, CommonJS)
  ├── scripts/
  │   └── sync-readme-version.js  # Automation: updates README version marker
- ├── yarn.lock
- └── tsconfig.json
+ └── yarn.lock
 ```
 
 ## Exports
@@ -197,7 +196,7 @@ The public API is exported from `src/index.ts`.
 - CustomError
 - BadRequestError
 - NotFoundError
-- RequestValidationError
+- RequonestValidationError
 - ServiceConnectionError
 - UnauthorizedError
 

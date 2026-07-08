@@ -32,6 +32,9 @@ router.delete(
     if (order.userId !== req.currentUser!.id) {
       throw new UnauthorizedError();
     }
+    if (order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestError("Order is in a terminal state and cannot be cancelled");
+    }
     order.set({ status: OrderStatus.CANCELLED });
     try {
       await order.save();

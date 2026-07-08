@@ -10,6 +10,20 @@ import { stripe } from "../../stripe";
 
 jest.mock("../../events/publishers/payment-cleared-publisher");
 
+const buildCancelledOrderEvent = (
+  orderId: string,
+  paymentIntentId = "pi_mock_123",
+) => ({
+  id: "evt_mock_3",
+  type: "payment_intent.succeeded",
+  data: {
+    object: {
+      id: paymentIntentId,
+      metadata: { orderId },
+    },
+  },
+});
+
 const createOrder = async (
   userId: string,
   overrides?: Partial<{ status: OrderStatus; price: number }>,
@@ -184,5 +198,29 @@ describe("stripe webhook — idempotency", () => {
     const payments = await Payment.find({ orderId: order.id });
     expect(payments).toHaveLength(1); // Only one Payment due to idempotency check
     expect(PaymentClearedPublisher.prototype.publish).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("stripe webhook — cancelled order refund", () => {
+  it("processes succeeded payment_intent events for CANCELLED orders by creating refunds", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const order = await createOrder(userId, { status: OrderStatus.CANCELLED });
+
+    (stripe.webhooks.constructEvent as jest.Mock).mockReturnValueOnce(
+      buildCancelledOrderEvent(order.id, "pi_abc_999"),
+    );
+
+    // Mock refunds.create to return a refund response
+    (stripe.refunds.create as jest.Mock).mockResolvedValueOnce({
+      id: "ref_mock_1",
+      object: "refund", // Required for downstream assertion in cancelled-order test
+    });
+
+    await sendWebhook({ irrelevant: true }).expect(200);
+
+    // Verify refunds.create was called with the correct payment intent
+    expect(stripe.refunds.create).toHaveBeenCalledWith({
+      payment_intent: "pi_abc_999",
+    });
   });
 });

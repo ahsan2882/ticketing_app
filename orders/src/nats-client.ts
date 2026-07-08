@@ -85,6 +85,7 @@ class NatsClient {
           }
         }
       } catch (error) {
+        healthState.setNotReady("nats");
         console.error("NATS status monitoring loop terminated:", error);
       }
     })();

@@ -4,8 +4,6 @@ Payment service for VenuePass.
 
 The payments service owns Stripe PaymentIntent creation, Stripe webhook handling, payment persistence, payment-cleared event publishing, and a local order projection used to validate whether an order can be paid. It exposes HTTP routes under `/api/payments` and participates in the VenuePass event system through NATS JetStream.
 
-No existing README was present in the uploaded `payments` service archive, so this document is generated from the service source, tests, package scripts, Dockerfile, TypeScript configuration, and the available local infrastructure manifests.
-
 ## Table of Contents
 
 - [Payments Service](#payments-service)
@@ -936,7 +934,6 @@ If duplicate webhook deliveries race, duplicate-key errors for `stripeId` are in
 - `PaymentRefundListener` exists but is not started in `src/index.ts`.
 - `OrderCompletedListener` exists and is started, but no uploaded test file covers it.
 - `PaymentRefundListener` has no uploaded test file.
-- The service imports `PaymentRefundEvent` and `SUBJECTS.PaymentRefund` from `@venuepass/common`, but the separate uploaded `common.zip` available in this workspace does not list that event or subject. The payments service source itself clearly expects them.
 - The health type alias is named `TicketsHealthCheck` even though this is the payments service.
 - The fatal startup catch throws `ServiceConnectionError("Error starting tickets service")`, which appears to be a copy-paste message.
 - `tsconfig.build.json` excludes `__tests__` but the uploaded test folders are named `__test__`; verify the build output if tests are unexpectedly compiled.

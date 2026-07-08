@@ -8,6 +8,7 @@ interface PaymentAttrs {
 interface PaymentDoc extends mongoose.Document {
   orderId: string;
   stripeId: string;
+  published: boolean;
 }
 
 interface PaymentModel extends mongoose.Model<PaymentDoc> {
@@ -18,6 +19,10 @@ const paymentSchema = new mongoose.Schema(
   {
     orderId: { type: String, required: true },
     stripeId: { type: String, required: true, unique: true },
+    published: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     toJSON: {

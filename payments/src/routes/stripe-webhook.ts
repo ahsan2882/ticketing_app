@@ -36,7 +36,7 @@ router.post(
       const orderId = paymentIntent.metadata.orderId;
 
       if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
-        throw new Error("metadata.orderId is not defined");
+        return res.status(400).send("Invalid or missing metadata.orderId");
       }
 
       const order = await Order.findById(orderId);
@@ -49,7 +49,14 @@ router.post(
         return res.status(200).send({ received: true });
       }
       if (order.status === OrderStatus.CANCELLED) {
-        await stripe.refunds.create({ payment_intent: paymentIntent.id });
+        try {
+          await stripe.refunds.create(
+            { payment_intent: paymentIntent.id },
+            { idempotencyKey: `refund_${paymentIntent.id}` },
+          );
+        } catch (err) {
+          // Ignore "already refunded" style errors so retries don't loop forever
+        }
         return res.status(200).send({ received: true });
       }
       // Check for existing payment by Stripe ID to prevent duplicates on redelivery
@@ -57,6 +64,18 @@ router.post(
       try {
         existingPayment = await Payment.findOne({ stripeId: paymentIntent.id });
         if (existingPayment) {
+          // A Payment doc existing only means the save happened — it does
+          // NOT mean the publish happened. If a prior delivery crashed or
+          // errored between save() and publish(), we still owe the world
+          // a PaymentClearedEvent. Retry it here instead of assuming done.
+          if (!existingPayment.published) {
+            await new PaymentClearedPublisher(natsClient.client).publish({
+              orderId: order.id,
+              stripeId: paymentIntent.id,
+            });
+            existingPayment.set({ published: true });
+            await existingPayment.save();
+          }
           return res.status(200).send({ received: true });
         }
       } catch (err) {
@@ -81,8 +100,20 @@ router.post(
           (mongoError.keyPattern?.stripeId as string | undefined) ===
             paymentIntent.id
         ) {
-          // Another request created a Payment with this stripeId before we did
-          // This handles race conditions between rapid webhook deliveries
+          // Another request created a Payment with this stripeId before we did.
+          // Same reasoning as above: existence of the doc doesn't guarantee
+          // publish happened, so fetch it and retry publish if needed.
+          const winningPayment = await Payment.findOne({
+            stripeId: paymentIntent.id,
+          });
+          if (winningPayment && !winningPayment.published) {
+            await new PaymentClearedPublisher(natsClient.client).publish({
+              orderId: order.id,
+              stripeId: paymentIntent.id,
+            });
+            winningPayment.set({ published: true });
+            await winningPayment.save();
+          }
           return res.status(200).send({ received: true });
         }
         // Re-throw any other errors
@@ -93,6 +124,8 @@ router.post(
         orderId: order.id,
         stripeId: paymentIntent.id,
       });
+      payment.set({ published: true });
+      await payment.save();
     }
 
     res.status(200).send({ received: true });

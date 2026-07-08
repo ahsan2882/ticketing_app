@@ -54,7 +54,43 @@ router.post(
         return;
       }
     }
-    const idempotencyKey = `payment-intent-order-${orderId}`;
+    // Generate an idempotency key that includes the current order version.
+    // This ensures retries of the same attempt reuse the same key,
+    // while new attempts get distinct keys to prevent replaying old responses.
+    const idempotencyKey = `payment-intent-order-${orderId}-v${order.version}`;
+
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: Math.round(order.price * 100),
+          currency: "usd",
+          payment_method_types: ["card"],
+          description: `Payment for order ${orderId}`,
+          metadata: {
+            orderId,
+            userId: req.currentUser!.id,
+          },
+        },
+        { idempotencyKey },
+      );
+    } catch (error: any) {
+      // If Stripe reports this paymentIntent was already created with this key,
+      // return the cached response to handle retries within the same attempt.
+      if (
+        error?.type === "api_error" &&
+        error.raw?.message?.includes("The PaymentIntent with ID")
+      ) {
+        const existingIntent = await stripe.paymentIntents.retrieve(
+          error.raw.id,
+        );
+        if (existingIntent.status !== "canceled" && existingIntent.status !== "succeeded") {
+          res.status(201).send({ clientSecret: existingIntent.client_secret });
+          return;
+        }
+      }
+      throw error;
+    }
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: Math.round(order.price * 100),

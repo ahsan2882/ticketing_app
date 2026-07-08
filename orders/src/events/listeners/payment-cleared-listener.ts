@@ -31,11 +31,23 @@ export class PaymentClearedListener extends Listener<PaymentClearedEvent> {
       throw new Error(`Order with ID ${orderId} not found`);
     }
 
-    // Skip processing if the order is already in a terminal state
-    if (
-      order.status === OrderStatus.CANCELLED ||
-      order.status === OrderStatus.COMPLETED
-    ) {
+    // Handle CANCELLED orders - publish refund for late PaymentCleared events
+    // This handles the case where payment succeeded via Stripe but we receive
+    // PaymentCleared after the order was cancelled (e.g., due to expiry)
+    if (order.status === OrderStatus.CANCELLED) {
+      console.debug(
+        `PaymentClearedListener publishing refund for cancelled order ${orderId}`,
+      );
+      await new PaymentRefundPublisher(this.client).publish({
+        orderId: order.id,
+        stripeId: data.stripeId,
+      });
+      msg.ack();
+      return;
+    }
+
+    // Skip processing for COMPLETED orders (already finalized, no refund needed)
+    if (order.status === OrderStatus.COMPLETED) {
       msg.ack();
       return;
     }

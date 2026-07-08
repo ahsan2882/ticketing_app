@@ -8,6 +8,12 @@ export const stripe = {
       status: "requires_payment_method",
     }),
   },
+  refunds: {
+    create: jest.fn().mockResolvedValue({
+      id: "ref_abc_123",
+      object: "refund", // Required for downstream assertion in cancelled-order test
+    }),
+  },
   webhooks: {
     constructEvent: jest.fn(),
   },
