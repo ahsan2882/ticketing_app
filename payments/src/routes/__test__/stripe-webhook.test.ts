@@ -219,8 +219,11 @@ describe("stripe webhook — cancelled order refund", () => {
     await sendWebhook({ irrelevant: true }).expect(200);
 
     // Verify refunds.create was called with the correct payment intent
-    expect(stripe.refunds.create).toHaveBeenCalledWith({
-      payment_intent: "pi_abc_999",
-    });
+    expect(stripe.refunds.create).toHaveBeenCalledWith(
+      {
+        payment_intent: "pi_abc_999",
+      },
+      { idempotencyKey: "refund_pi_abc_999" },
+    );
   });
 });

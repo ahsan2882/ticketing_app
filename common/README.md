@@ -196,7 +196,7 @@ The public API is exported from `src/index.ts`.
 - CustomError
 - BadRequestError
 - NotFoundError
-- RequonestValidationError
+- RequestValidationError
 - ServiceConnectionError
 - UnauthorizedError
 

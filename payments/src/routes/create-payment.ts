@@ -79,7 +79,7 @@ router.post(
       // return the cached response to handle retries within the same attempt.
       if (
         error?.type === "api_error" &&
-        error.raw?.message?.includes("The PaymentIntent with ID")
+        error.rawType === "idempotency_error"
       ) {
         const existingIntent = await stripe.paymentIntents.retrieve(
           error.raw.id,
