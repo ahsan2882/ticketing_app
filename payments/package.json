@@ -1,0 +1,48 @@
+{
+  "name": "payments",
+  "version": "1.0.0",
+  "description": "Payment service for VenuePass",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "tsx watch src/index.ts",
+    "test": "jest --watchAll --no-cache"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "./src/test/setup.ts"
+    ]
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@types/cookie-session": "^2.0.49",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.0.1",
+    "@venuepass/common": "^1.0.65",
+    "cookie-session": "^2.1.1",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.4",
+    "nats": "^2.29.3",
+    "stripe": "^22.3.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^7.2.0",
+    "jest": "^30.4.2",
+    "mongodb-memory-server": "^11.2.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.11"
+  },
+  "packageManager": "yarn@1.22.22"
+}

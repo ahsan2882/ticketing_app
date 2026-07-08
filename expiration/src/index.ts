@@ -55,7 +55,7 @@ const start = async () => {
   } catch (error) {
     healthState.setNotReady("nats");
     console.error("NATS initial connection failed:", error);
-    throw new ServiceConnectionError("Error connecting to NATS");
+    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
   }
   try {
     await startOrderListeners();
@@ -67,11 +67,7 @@ const start = async () => {
 };
 
 const connectNatsClient = async () => {
-  try {
-    await natsClient.connect();
-  } catch (error) {
-    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
-  }
+  await natsClient.connect();
 };
 
 const startOrderListeners = async () => {

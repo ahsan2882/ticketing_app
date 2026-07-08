@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payments
+  template:
+    metadata:
+      labels:
+        app: payments
+    spec:
+      initContainers:
+        - name: wait-for-nats
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z nats-srv 4222; do
+                echo "Waiting for nats..."
+                sleep 2
+              done
+        - name: wait-for-payments-mongo-primary
+          image: mongo
+          command:
+            - sh
+            - -c
+            - |
+              until mongosh --host payments-mongo-srv --quiet --eval "try { const h = db.adminCommand({ hello: 1 }); quit(h.isWritablePrimary ? 0 : 1); } catch (e) { quit(1); }" > /dev/null 2>&1; do
+                echo "Waiting for payments-mongo PRIMARY..."
+                sleep 2
+              done
+              echo "payments-mongo is PRIMARY"
+      containers:
+        - name: payments
+          image: ahsan2882/payments
+          env:
+            - name: NATS_URL
+              value: "nats://nats-srv:4222"
+            - name: JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_KEY
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stripe-secret
+                  key: STRIPE_SECRET_KEY
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: stripe-webhook-secret
+                  key: STRIPE_WEBHOOK_SECRET
+            - name: NODE_ENV
+              value: "development"
+            - name: PAYMENTS_MONGO_URI
+              value: "mongodb://payments-mongo-srv:27017/payments?replicaSet=rs0"
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 5
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 24
+            timeoutSeconds: 5
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+            timeoutSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments-srv
+spec:
+  selector:
+    app: payments
+  ports:
+    - protocol: TCP
+      name: payments-port
+      port: 3000
+      targetPort: 3000

@@ -27,12 +27,15 @@ router.delete(
     }
     const order = await Order.findById(orderId).populate("ticket");
     if (!order) {
-      throw new NotFoundError();
+      throw new NotFoundError("Order not found");
     }
     if (order.userId !== req.currentUser!.id) {
       throw new UnauthorizedError();
     }
-    order.status = OrderStatus.CANCELLED;
+    if (order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestError("Order is in a terminal state and cannot be cancelled");
+    }
+    order.set({ status: OrderStatus.CANCELLED });
     try {
       await order.save();
     } catch (error: any) {
@@ -56,6 +59,7 @@ router.delete(
       id: order.id,
       version: order.version,
       ticket: { id: order.ticket.id },
+      status: OrderStatus.CANCELLED,
     });
     // return the order that was just cancelled to the user so they can see it in their orders list
     // we don't want to send back the ticket details because they shouldn't be able to see them after cancelling an order

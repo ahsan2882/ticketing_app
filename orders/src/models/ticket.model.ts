@@ -6,6 +6,7 @@ interface TicketAttrs {
   title: string;
   price: number;
   userId: string;
+  orderId?: string;
 }
 
 interface TicketDoc extends mongoose.Document {
@@ -14,6 +15,7 @@ interface TicketDoc extends mongoose.Document {
   price: number;
   userId: string;
   version: number;
+  orderId?: string;
   isReserved(session?: mongoose.ClientSession): Promise<boolean>;
 }
 
@@ -26,6 +28,7 @@ const ticketSchema = new mongoose.Schema(
     title: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     userId: { type: String, required: true },
+    orderId: { type: String },
   },
   {
     optimisticConcurrency: true,

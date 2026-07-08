@@ -39,7 +39,7 @@ router.post(
       await session.withTransaction(async () => {
         const ticket = await Ticket.findById(ticketId).session(session);
         if (!ticket) {
-          throw new NotFoundError();
+          throw new NotFoundError("Ticket not found");
         }
         // Make sure the ticket is not already reserved
         const isReserved = await ticket.isReserved(session);

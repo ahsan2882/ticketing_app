@@ -12,8 +12,12 @@ export {
   JetStreamSetupService,
   type ConsumerConfig,
 } from "./events/jetstream-setup";
+export type { OrderAwaitingPaymentEvent } from "./events/orders/order-awaiting-payment-event";
 export type { OrderCancelledEvent } from "./events/orders/order-cancelled-event";
+export type { OrderCompletedEvent } from "./events/orders/order-completed-event";
 export type { OrderCreatedEvent } from "./events/orders/order-created-event";
+export type { PaymentClearedEvent } from "./events/payments/payment-cleared-event";
+export type { PaymentRefundEvent } from "./events/payments/payment-refund-event";
 export type { TicketCreatedEvent } from "./events/tickets/ticket-created-event";
 export type { TicketUpdatedEvent } from "./events/tickets/ticket-updated-event";
 

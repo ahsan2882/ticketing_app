@@ -7,7 +7,7 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "commonjs",
+    "module": "es2022",
     "target": "es2022",
     "types": ["jest", "node"],
     "moduleResolution": "bundler",
@@ -41,6 +41,7 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
     "allowSyntheticDefaultImports": true,
     "outDir": "./build",
     "rootDir": "./src"

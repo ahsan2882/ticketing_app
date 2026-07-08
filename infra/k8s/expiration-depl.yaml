@@ -24,6 +24,16 @@ spec:
                 sleep 2
               done
               echo "expiration redis is ready"
+        - name: wait-for-orders
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z orders-srv 3000; do
+                echo "Waiting for orders..."
+                sleep 2
+              done
       containers:
         - name: expiration
           image: ahsan2882/expiration

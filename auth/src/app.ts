@@ -2,6 +2,7 @@ import { errorHandler, NotFoundError } from "@venuepass/common";
 import bodyParser from "body-parser";
 import cookieSession from "cookie-session";
 import express from "express";
+import helmet from "helmet";
 import { healthState } from "./health";
 import { currentUserRouter } from "./routes/current-user";
 import { signInRouter } from "./routes/signin";
@@ -10,7 +11,7 @@ import { signUpRouter } from "./routes/signup";
 
 const app = express();
 app.set("trust proxy", true);
-
+app.use(helmet());
 app.use(bodyParser.json());
 app.use(
   cookieSession({
@@ -45,7 +46,7 @@ app.get("/readyz", (_req, res) => {
 });
 
 app.all("/{*splat}", async (req, res) => {
-  throw new NotFoundError();
+  throw new NotFoundError("Route not found in auth service");
 });
 
 app.use(errorHandler);

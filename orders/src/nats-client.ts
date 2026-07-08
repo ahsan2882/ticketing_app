@@ -54,34 +54,39 @@ class NatsClient {
     if (!this._client) return;
 
     void (async () => {
-      for await (const status of this.client.status()) {
-        switch (status.type) {
-          case Events.Disconnect:
-            healthState.setNotReady("nats");
-            console.error("NATS disconnected");
-            break;
-
-          case Events.Reconnect:
-            healthState.setNotReady("nats");
-            console.log("NATS reconnected");
-
-            try {
-              await this.ensureJetStream();
-              healthState.setReady("nats");
-            } catch (err) {
+      try {
+        for await (const status of this.client.status()) {
+          switch (status.type) {
+            case Events.Disconnect:
               healthState.setNotReady("nats");
-              console.error(
-                "Failed to initialize JetStream after reconnect:",
-                err,
-              );
-            }
-            break;
+              console.error("NATS disconnected");
+              break;
 
-          case Events.Error:
-            healthState.setNotReady("nats");
-            console.error("NATS connection error:", status.data);
-            break;
+            case Events.Reconnect:
+              healthState.setNotReady("nats");
+              console.log("NATS reconnected");
+
+              try {
+                await this.ensureJetStream();
+                healthState.setReady("nats");
+              } catch (err) {
+                healthState.setNotReady("nats");
+                console.error(
+                  "Failed to initialize JetStream after reconnect:",
+                  err,
+                );
+              }
+              break;
+
+            case Events.Error:
+              healthState.setNotReady("nats");
+              console.error("NATS connection error:", status.data);
+              break;
+          }
         }
+      } catch (error) {
+        healthState.setNotReady("nats");
+        console.error("NATS status monitoring loop terminated:", error);
       }
     })();
   }

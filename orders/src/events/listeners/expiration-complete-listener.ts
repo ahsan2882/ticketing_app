@@ -46,6 +46,7 @@ export class ExpirationCompleteListener extends Listener<ExpirationCompleteEvent
       id: orderId,
       version: order.version,
       ticket: { id: order.ticket.id },
+      status: OrderStatus.CANCELLED,
     });
     msg.ack();
   }

@@ -97,7 +97,7 @@ router.patch(
     }
     const ticket: TicketDoc | null = await Ticket.findById(ticketId);
     if (!ticket) {
-      throw new NotFoundError();
+      throw new NotFoundError("Ticket not found");
     }
     if (ticket.userId !== req.currentUser?.id) {
       throw new UnauthorizedError();

@@ -2,6 +2,7 @@ import { ServiceConnectionError } from "@venuepass/common";
 import mongoose from "mongoose";
 import { app } from "./app";
 import { ExpirationCompleteListener } from "./events/listeners/expiration-complete-listener";
+import { PaymentClearedListener } from "./events/listeners/payment-cleared-listener";
 import { TicketCreatedListener } from "./events/listeners/ticket-created-listener";
 import { TicketUpdatedListener } from "./events/listeners/ticket-updated-listener";
 import { healthState } from "./health";
@@ -46,7 +47,7 @@ const start = async () => {
   } catch (error) {
     healthState.setNotReady("nats");
     console.error("Error connecting to NATS:", error);
-    throw new ServiceConnectionError("Error connecting to NATS");
+    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
   }
   try {
     await startListeners();
@@ -79,11 +80,7 @@ const connectMongo = async () => {
 };
 
 const connectNats = async () => {
-  try {
-    await natsClient.connect();
-  } catch (error) {
-    throw new ServiceConnectionError(`Error connecting to NATS: ${error}`);
-  }
+  await natsClient.connect();
 };
 
 const startListeners = async () => {
@@ -91,6 +88,7 @@ const startListeners = async () => {
     new TicketCreatedListener(natsClient.client).listen(),
     new TicketUpdatedListener(natsClient.client).listen(),
     new ExpirationCompleteListener(natsClient.client).listen(),
+    new PaymentClearedListener(natsClient.client).listen(),
   ]);
 
   console.log("Ticket listeners started");

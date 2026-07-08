@@ -1,6 +1,6 @@
 "use client";
 
-import { RequestError } from "@/models/request-error.model";
+import type { RequestError } from "@/models/request-error.model";
 import axios from "axios";
 import { useCallback, useState } from "react";
 

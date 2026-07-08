@@ -1,11 +1,15 @@
 export const STREAM_NAME = "EVENTS";
 
 export enum SUBJECTS {
-  TicketCreated = "ticket.created",
-  TicketUpdated = "ticket.updated",
+  ExpirationComplete = "expiration.complete",
+  OrderAwaitingPayment = "order.awaiting-payment",
   OrderCreated = "order.created",
   OrderCancelled = "order.cancelled",
-  ExpirationComplete = "expiration.complete",
+  OrderCompleted = "order.completed",
+  PaymentCleared = "payment.cleared",
+  PaymentRefund = "payment.refund",
+  TicketCreated = "ticket.created",
+  TicketUpdated = "ticket.updated",
 }
 
 // TODO: Posion Queue Implementation
