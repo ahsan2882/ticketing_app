@@ -1,12 +1,24 @@
 {
   "name": "@venuepass/common",
-  "version": "1.0.67",
+  "version": "1.0.68",
   "description": "Shared common package for VenuePass application",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
   "files": [
     "build/**/*"
   ],
+  "exports": {
+    ".": {
+      "types": "./build/server/index.d.ts",
+      "import": "./build/server/index.js",
+      "require": "./build/server/index.js"
+    },
+    "./client": {
+      "types": "./build/client/index.d.ts",
+      "import": "./build/client/index.js",
+      "require": "./build/client/index.js"
+    }
+  },
   "scripts": {
     "build": "yarn clean && tsc",
     "clean": "del ./build/*",
