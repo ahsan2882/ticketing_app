@@ -1,4 +1,4 @@
-import { OrderStatus } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import mongoose from "mongoose";
 import { type TicketDoc } from "../models/ticket.model";
 
@@ -66,7 +66,6 @@ const orderSchema = new mongoose.Schema(
           status,
           expiresAt,
           createdAt,
-          version: doc.get("version"),
         };
       },
     },

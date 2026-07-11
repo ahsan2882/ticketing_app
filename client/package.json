@@ -14,10 +14,13 @@
     "@types/node": "^26.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@venuepass/common": "^1.0.68",
     "axios": "^1.18.1",
+    "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "react": "19.2.7",
     "react-dom": "19.2.7",
+    "react-stripe-checkout": "^2.6.3",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3"
   },

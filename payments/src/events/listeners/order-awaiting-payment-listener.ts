@@ -1,9 +1,9 @@
 import {
   Listener,
   type OrderAwaitingPaymentEvent,
-  OrderStatus,
   SUBJECTS,
 } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import type { JsMsg, NatsConnection } from "nats";
 import { Order } from "../../models/order.model";
 

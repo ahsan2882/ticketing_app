@@ -1,4 +1,4 @@
-import { OrderStatus } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 import Stripe from "stripe";

@@ -7,8 +7,8 @@ import GradientButton from "../ui/gradient-button";
 import TicketIcon from "../ui/icons/ticket-svg";
 
 const NAV_LINKS = [
-  { label: "Browse Events", href: "#" },
-  { label: "Sell Tickets", href: "#" },
+  { label: "Browse Events", href: "/tickets" },
+  { label: "Sell Tickets", href: "/tickets/new" },
   { label: "Venues", href: "#" },
   { label: "How it works", href: "#" },
 ];

@@ -1,7 +1,9 @@
 import axios from "axios";
 import { headers } from "next/headers";
 
-export async function getCurrentUser() {
+export async function getCurrentUser(): Promise<{
+  currentUser: null | { id: string; name: string; email: string };
+}> {
   const incomingHeaders = await headers();
   const headersObject = Object.fromEntries(incomingHeaders.entries());
   try {

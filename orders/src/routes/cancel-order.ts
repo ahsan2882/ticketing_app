@@ -1,10 +1,10 @@
 import {
   BadRequestError,
   NotFoundError,
-  OrderStatus,
   requireAuth,
   UnauthorizedError,
 } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 import { OrderCancelledPublisher } from "../events/publishers/order-cancelled-publisher";
@@ -32,8 +32,13 @@ router.delete(
     if (order.userId !== req.currentUser!.id) {
       throw new UnauthorizedError();
     }
-    if (order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELLED) {
-      throw new BadRequestError("Order is in a terminal state and cannot be cancelled");
+    if (
+      order.status === OrderStatus.COMPLETED ||
+      order.status === OrderStatus.CANCELLED
+    ) {
+      throw new BadRequestError(
+        "Order is in a terminal state and cannot be cancelled",
+      );
     }
     order.set({ status: OrderStatus.CANCELLED });
     try {

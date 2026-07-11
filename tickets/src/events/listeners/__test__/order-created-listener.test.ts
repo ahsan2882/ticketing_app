@@ -1,10 +1,10 @@
+import { type OrderCreatedEvent } from "@venuepass/common";
 import {
   EventType,
   OrderStatus,
   TicketCategory,
   TicketStatus,
-  type OrderCreatedEvent,
-} from "@venuepass/common";
+} from "@venuepass/common/client";
 import mongoose from "mongoose";
 import type { JsMsg } from "nats";
 import { Ticket } from "../../../models/ticket.model";

@@ -1,4 +1,4 @@
-import { TicketStatus } from "@venuepass/common";
+import { TicketStatus } from "@venuepass/common/client";
 import mongoose from "mongoose";
 import type { JsMsg } from "nats";
 import { Ticket } from "../../../models/ticket.model";

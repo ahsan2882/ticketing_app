@@ -23,6 +23,7 @@ router.get("/api/tickets/:id", async (req: Request, res: Response) => {
   if (!ticket) {
     throw new NotFoundError("Ticket not found");
   }
+  console.log({ ticket });
   res.send(ticket);
 });
 

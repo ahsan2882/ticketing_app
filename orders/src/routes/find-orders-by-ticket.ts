@@ -1,10 +1,10 @@
 import {
   BadRequestError,
   NotFoundError,
-  OrderStatus,
   requireAuth,
   UnauthorizedError,
 } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 import { Order } from "../models/order.model";

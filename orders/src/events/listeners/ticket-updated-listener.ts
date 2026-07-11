@@ -1,10 +1,5 @@
-import {
-  Listener,
-  OrderStatus,
-  SUBJECTS,
-  TicketStatus,
-  type TicketUpdatedEvent,
-} from "@venuepass/common";
+import { Listener, SUBJECTS, type TicketUpdatedEvent } from "@venuepass/common";
+import { OrderStatus, TicketStatus } from "@venuepass/common/client";
 import type { JsMsg, NatsConnection } from "nats";
 import { Order } from "../../models/order.model";
 import { Ticket } from "../../models/ticket.model";

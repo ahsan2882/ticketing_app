@@ -1,4 +1,4 @@
-import { TicketStatus } from "@venuepass/common";
+import { TicketStatus } from "@venuepass/common/client";
 import mongoose from "mongoose";
 import request from "supertest";
 import { app } from "../../app";

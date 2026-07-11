@@ -1,4 +1,4 @@
-import { OrderStatus } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import mongoose from "mongoose";
 
 interface OrderAttrs {
@@ -44,7 +44,6 @@ const orderSchema = new mongoose.Schema(
           price,
           status,
           stripeId,
-          version: doc.get("version"),
         };
       },
     },

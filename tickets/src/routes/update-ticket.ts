@@ -1,13 +1,15 @@
 import {
   BadRequestError,
-  EventType,
   NotFoundError,
   requireAuth,
-  TicketCategory,
-  TicketStatus,
   UnauthorizedError,
   validateRequest,
 } from "@venuepass/common";
+import {
+  EventType,
+  TicketCategory,
+  TicketStatus,
+} from "@venuepass/common/client";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
 import mongoose from "mongoose";

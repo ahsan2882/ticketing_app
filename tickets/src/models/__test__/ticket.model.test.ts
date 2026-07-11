@@ -1,4 +1,8 @@
-import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
+import {
+  EventType,
+  TicketCategory,
+  TicketStatus,
+} from "@venuepass/common/client";
 import mongoose from "mongoose";
 import { Ticket } from "../ticket.model";
 

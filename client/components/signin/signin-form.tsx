@@ -2,7 +2,7 @@
 
 import { useRequest } from "@/hooks/use-request";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type SyntheticEvent } from "react";
 import ForgotPasswordLink from "../ui/forgot-password-link";
 import FormField from "../ui/form-field";
@@ -11,6 +11,7 @@ import EmailIcon from "../ui/icons/email-svg";
 import LockIcon from "../ui/icons/lock-svg";
 
 export default function SignInForm() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +23,12 @@ export default function SignInForm() {
       password,
     },
     onSuccess: (res) => {
-      router.push("/");
+      const returnTo = searchParams.get("returnTo");
+      if (returnTo !== null) {
+        router.push(returnTo);
+      } else {
+        router.push("/");
+      }
       router.refresh();
     },
   });
@@ -97,7 +103,7 @@ export default function SignInForm() {
         <p className="text-center text-[14px] text-zinc-500">
           New to VenuePass?{" "}
           <Link
-            href="/auth/signup"
+            href={`/auth/signup${searchParams.get("returnTo") ? `?returnTo=${searchParams.get("returnTo")}` : ""}`}
             className="text-violet-400 hover:text-white font-semibold transition-colors duration-150"
           >
             Create an account
