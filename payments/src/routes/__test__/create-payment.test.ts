@@ -1,4 +1,4 @@
-import { OrderStatus } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import assert from "assert";
 import mongoose from "mongoose";
 import request from "supertest";

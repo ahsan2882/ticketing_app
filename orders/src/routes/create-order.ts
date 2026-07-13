@@ -1,10 +1,10 @@
 import {
   BadRequestError,
   NotFoundError,
-  OrderStatus,
   requireAuth,
   validateRequest,
 } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
 import mongoose from "mongoose";

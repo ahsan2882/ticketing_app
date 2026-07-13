@@ -1,18 +1,38 @@
 import type { HTMLInputTypeAttribute } from "react";
 
-export interface FormFieldProps {
+export interface BaseFormFieldProps {
+  value: string;
+  onChange: (val: string) => void;
+  wrapperClassName?: string;
+  onBlur?: () => void;
+}
+
+export interface FormFieldProps extends BaseFormFieldProps {
   label: string;
   name: string;
   id: string;
-  type: HTMLInputTypeAttribute;
   placeholder: string;
-  autoComplete: string;
-  value: string;
-  onChange: (val: string) => void;
+  type?: HTMLInputTypeAttribute;
+  isTextArea?: boolean;
   hasError?: boolean;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
+  autoComplete?: string;
   rightLabel?: React.ReactNode; // for "Forgot?" link
   inputClassName?: string;
-  wrapperClassName?: string;
   labelClassName?: string;
+  required?: boolean;
+  pattern?: string;
+}
+
+export interface DropdownFormFieldProps extends BaseFormFieldProps {
+  label: string;
+  name: string;
+  id: string;
+  placeholder: string;
+  selectOptions: { label: string; value: string }[];
+  hasError?: boolean;
+  icon?: React.ReactNode;
+  inputClassName?: string;
+  labelClassName?: string;
+  required?: boolean;
 }

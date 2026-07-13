@@ -1,10 +1,9 @@
 import {
   BadRequestError,
-  EventType,
   requireAuth,
-  TicketCategory,
   validateRequest,
 } from "@venuepass/common";
+import { EventType, TicketCategory } from "@venuepass/common/client";
 import express, { type Request, type Response } from "express";
 import { body } from "express-validator";
 import mongoose from "mongoose";
@@ -34,23 +33,36 @@ const createTicketValidators = [
     .trim()
     .not()
     .isEmpty()
-    .withMessage("Artist must be a string"),
+    .isLength({ min: 3 })
+    .withMessage("Artist must be at least 3 characters"),
   body("venue")
     .isString()
     .trim()
     .not()
     .isEmpty()
-    .withMessage("Venue must be a string"),
+    .isLength({ min: 3 })
+    .withMessage("Venue must be at least 3 characters"),
   body("city")
     .isString()
     .trim()
     .not()
     .isEmpty()
-    .withMessage("City must be a string"),
+    .isLength({ min: 3 })
+    .withMessage("City must be at least 3 characters"),
   body("eventDate")
     .isISO8601()
-    .toDate()
-    .withMessage("Event date must be a valid date"),
+    .withMessage("Event date must be a valid date")
+    .bail()
+    .custom((value: string) => {
+      const eventDate = new Date(value);
+
+      if (eventDate.getTime() < Date.now()) {
+        throw new Error("Event date cannot be in the past");
+      }
+
+      return true;
+    })
+    .toDate(),
   body("eventType")
     .isIn(Object.values(EventType))
     .withMessage("Invalid event type"),

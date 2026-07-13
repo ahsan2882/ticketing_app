@@ -1,18 +1,17 @@
-import { TicketStatus } from "@venuepass/common";
+import { TicketStatus } from "@venuepass/common/client";
 import express, { type Request, type Response } from "express";
 import { Ticket } from "../models/ticket.model";
 
 const router = express.Router();
 
 const PUBLIC_FIELDS =
-  "title price artist venue city eventDate eventType category status description imageUrl";
-const PRIVATE_FIELDS = `${PUBLIC_FIELDS} userId seat`;
+  "title price artist venue city eventDate eventType category";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
 router.get("/api/tickets", async (req: Request, res: Response) => {
-  const fields = req.currentUser ? PRIVATE_FIELDS : PUBLIC_FIELDS;
+  const fields = PUBLIC_FIELDS;
   const requestedLimit = Number(req.query.limit);
   const limit =
     Number.isFinite(requestedLimit) && requestedLimit > 0

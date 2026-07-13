@@ -12,50 +12,56 @@ spec:
       labels:
         app: client
     spec:
-      initContainers:
-        - name: wait-for-auth
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              until nc -z auth-srv 3000; do
-                echo "Waiting for auth..."
-                sleep 2
-              done
-        - name: wait-for-orders
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              until nc -z orders-srv 3000; do
-                echo "Waiting for orders..."
-                sleep 2
-              done
-        - name: wait-for-tickets
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              until nc -z tickets-srv 3000; do
-                echo "Waiting for tickets..."
-                sleep 2
-              done
-        - name: wait-for-payments
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              until nc -z payments-srv 3000; do
-                echo "Waiting for payments..."
-                sleep 2
-              done
+      # initContainers:
+      #   - name: wait-for-auth
+      #     image: busybox:1.36
+      #     command:
+      #       - sh
+      #       - -c
+      #       - |
+      #         until nc -z auth-srv 3000; do
+      #           echo "Waiting for auth..."
+      #           sleep 2
+      #         done
+      #   - name: wait-for-orders
+      #     image: busybox:1.36
+      #     command:
+      #       - sh
+      #       - -c
+      #       - |
+      #         until nc -z orders-srv 3000; do
+      #           echo "Waiting for orders..."
+      #           sleep 2
+      #         done
+      #   - name: wait-for-tickets
+      #     image: busybox:1.36
+      #     command:
+      #       - sh
+      #       - -c
+      #       - |
+      #         until nc -z tickets-srv 3000; do
+      #           echo "Waiting for tickets..."
+      #           sleep 2
+      #         done
+      #   - name: wait-for-payments
+      #     image: busybox:1.36
+      #     command:
+      #       - sh
+      #       - -c
+      #       - |
+      #         until nc -z payments-srv 3000; do
+      #           echo "Waiting for payments..."
+      #           sleep 2
+      #         done
       containers:
         - name: client
           image: ahsan2882/client
+          env:
+            - name: NEXT_PUBLIC_STRIPE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stripe-public-key
+                  key: NEXT_PUBLIC_STRIPE_KEY
 ---
 apiVersion: v1
 kind: Service

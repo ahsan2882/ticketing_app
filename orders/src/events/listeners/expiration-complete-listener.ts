@@ -1,9 +1,9 @@
 import {
   Listener,
-  OrderStatus,
   SUBJECTS,
   type ExpirationCompleteEvent,
 } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import type { JsMsg, NatsConnection } from "nats";
 import { Order } from "../../models/order.model";
 import { OrderCancelledPublisher } from "../publishers/order-cancelled-publisher";

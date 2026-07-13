@@ -11,7 +11,7 @@ export function useRequest<TResponse = unknown>({
   onSuccess,
 }: {
   url: string;
-  method: "get" | "post";
+  method: "get" | "post" | "patch" | "delete";
   body?: Record<string, unknown>;
   onSuccess?: (res?: TResponse) => void;
 }) {
@@ -25,7 +25,12 @@ export function useRequest<TResponse = unknown>({
       const response =
         method === "get"
           ? await axios.get<TResponse>(url)
-          : await axios.post<TResponse>(url, body);
+          : method === "delete"
+            ? await axios.delete<TResponse>(
+                url,
+                body ? { data: body } : undefined,
+              )
+            : await axios[method]<TResponse>(url, body);
       if (onSuccess) {
         onSuccess(response.data);
       }

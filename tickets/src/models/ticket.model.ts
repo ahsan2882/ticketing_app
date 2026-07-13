@@ -1,4 +1,8 @@
-import { EventType, TicketCategory, TicketStatus } from "@venuepass/common";
+import {
+  EventType,
+  TicketCategory,
+  TicketStatus,
+} from "@venuepass/common/client";
 import mongoose from "mongoose";
 
 interface CreateTicketBodyIngress {
@@ -146,7 +150,6 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
         } = ret;
         return {
           id: _id.toString(),
-          version: doc.get("version"),
           title,
           price,
           userId,
@@ -160,6 +163,7 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
           description,
           imageUrl,
           status,
+          version: doc.get("version"),
         };
       },
     },

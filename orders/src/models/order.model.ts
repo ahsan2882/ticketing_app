@@ -1,4 +1,4 @@
-import { OrderStatus } from "@venuepass/common";
+import { OrderStatus } from "@venuepass/common/client";
 import mongoose from "mongoose";
 import { type TicketDoc } from "../models/ticket.model";
 
