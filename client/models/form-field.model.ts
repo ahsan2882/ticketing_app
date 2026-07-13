@@ -36,8 +36,3 @@ export interface DropdownFormFieldProps extends BaseFormFieldProps {
   labelClassName?: string;
   required?: boolean;
 }
-
-export interface RadioFormFieldProps extends BaseFormFieldProps {
-  radioOptions: { label: string; value: string }[];
-  legendText: string;
-}

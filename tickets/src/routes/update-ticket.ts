@@ -58,9 +58,17 @@ router.patch(
       .withMessage("City must be a string"),
     body("eventDate")
       .optional()
-      .isISO8601({ strict: true, strictSeparator: true })
-      .toDate()
-      .withMessage("Event date must be a valid date"),
+      .isISO8601()
+      .withMessage("Event date must be a valid date")
+      .bail()
+      .custom((value: string) => {
+        const eventDate = new Date(value);
+        if (eventDate.getTime() < Date.now()) {
+          throw new Error("Event date cannot be in the past");
+        }
+        return true;
+      })
+      .toDate(),
     body("eventType")
       .optional()
       .isIn(Object.values(EventType))

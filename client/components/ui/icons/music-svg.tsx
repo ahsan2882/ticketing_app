@@ -10,7 +10,7 @@ export default function MusicIcon({ customClass }: { customClass: string }) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`${customClass}`}
+      className={customClass}
     >
       <circle cx="8" cy="18" r="4"></circle>
       <path d="M12 18V2l7 4"></path>

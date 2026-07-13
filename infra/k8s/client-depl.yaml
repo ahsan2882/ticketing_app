@@ -58,7 +58,10 @@ spec:
           image: ahsan2882/client
           env:
             - name: NEXT_PUBLIC_STRIPE_KEY
-              value: "pk_test_51TOjZVGe0mpTHsu5wtgF58dCuK9nMJKnC6zbpoVeGrtyKPK6zQ21WEzWx7fjftE7ovbr50N8lgiUi2gu8D3uL4Pt00zkENFn0U"
+              valueFrom:
+                secretKeyRef:
+                  name: stripe-public-key
+                  key: NEXT_PUBLIC_STRIPE_KEY
 ---
 apiVersion: v1
 kind: Service

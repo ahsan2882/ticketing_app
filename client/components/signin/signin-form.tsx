@@ -23,12 +23,14 @@ export default function SignInForm() {
       password,
     },
     onSuccess: (res) => {
-      const returnTo = searchParams.get("returnTo");
-      if (returnTo !== null) {
-        router.push(returnTo);
-      } else {
-        router.push("/");
-      }
+      const rawReturnTo = searchParams.get("returnTo");
+      const safeReturnTo =
+        rawReturnTo &&
+        rawReturnTo.startsWith("/") &&
+        !rawReturnTo.startsWith("//")
+          ? rawReturnTo
+          : "/";
+      router.push(safeReturnTo);
       router.refresh();
     },
   });
@@ -103,7 +105,7 @@ export default function SignInForm() {
         <p className="text-center text-[14px] text-zinc-500">
           New to VenuePass?{" "}
           <Link
-            href={`/auth/signup${searchParams.get("returnTo") ? `?returnTo=${searchParams.get("returnTo")}` : ""}`}
+            href={`/auth/signup${searchParams.get("returnTo") ? `?returnTo=${encodeURIComponent(searchParams.get("returnTo")!)}` : ""}`}
             className="text-violet-400 hover:text-white font-semibold transition-colors duration-150"
           >
             Create an account

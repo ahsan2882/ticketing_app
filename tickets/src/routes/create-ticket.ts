@@ -34,21 +34,21 @@ const createTicketValidators = [
     .not()
     .isEmpty()
     .isLength({ min: 3 })
-    .withMessage("Artist must be a string"),
+    .withMessage("Artist must be at least 3 characters"),
   body("venue")
     .isString()
     .trim()
     .not()
     .isEmpty()
     .isLength({ min: 3 })
-    .withMessage("Venue must be a string"),
+    .withMessage("Venue must be at least 3 characters"),
   body("city")
     .isString()
     .trim()
     .not()
     .isEmpty()
     .isLength({ min: 3 })
-    .withMessage("City must be a string"),
+    .withMessage("City must be at least 3 characters"),
   body("eventDate")
     .isISO8601()
     .withMessage("Event date must be a valid date")

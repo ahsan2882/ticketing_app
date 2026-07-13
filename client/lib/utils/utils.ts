@@ -6,6 +6,7 @@ export const toTitleCase = (value: string): string =>
 
 export function getSecondsRemaining(expiresAt: string) {
   const diffMs = new Date(expiresAt).getTime() - Date.now();
+  if (Number.isNaN(diffMs)) return 0;
   return Math.max(0, Math.round(diffMs / 1000));
 }
 

@@ -25,12 +25,14 @@ export default function SignUpForm() {
       name: fullName,
     },
     onSuccess: (res) => {
-      const returnTo = searchParams.get("returnTo");
-      if (returnTo !== null) {
-        router.push(returnTo);
-      } else {
-        router.push("/");
-      }
+      const rawReturnTo = searchParams.get("returnTo");
+      const safeReturnTo =
+        rawReturnTo &&
+        rawReturnTo.startsWith("/") &&
+        !rawReturnTo.startsWith("//")
+          ? rawReturnTo
+          : "/";
+      router.push(safeReturnTo);
       router.refresh();
     },
   });

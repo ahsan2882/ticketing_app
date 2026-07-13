@@ -1,3 +1,4 @@
+"use client";
 import type { FormFieldProps } from "@/models/form-field.model";
 
 export default function FormField({
@@ -51,7 +52,9 @@ export default function FormField({
             required={required}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onBlur={onBlur}
             placeholder={placeholder}
+            aria-invalid={hasError}
             className={`w-full bg-transparent text-zinc-100 placeholder-zinc-600 px-4 py-3 text-sm focus:outline-none ${inputClassName}`}
           ></textarea>
         ) : (

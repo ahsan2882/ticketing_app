@@ -66,6 +66,7 @@ const orderSchema = new mongoose.Schema(
           status,
           expiresAt,
           createdAt,
+          version: doc.get("version"),
         };
       },
     },

@@ -44,6 +44,7 @@ const orderSchema = new mongoose.Schema(
           price,
           status,
           stripeId,
+          version: doc.get("version"),
         };
       },
     },

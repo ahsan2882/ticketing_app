@@ -16,6 +16,7 @@ import StripeCheckout, { type Token } from "react-stripe-checkout";
 import { useRequest } from "../../../hooks/use-request";
 import { formatTime, getSecondsRemaining } from "../../../lib/utils/utils";
 import type { Order } from "../../../models/order.model";
+import type { RequestError } from "../../../models/request-error.model";
 import { useCurrentUser } from "../../../providers/current-user-context-provider";
 
 function OrderSkeleton() {
@@ -48,12 +49,13 @@ const StripeCheckoutButton = StripeCheckout as unknown as ComponentType<
 
 export default function CreatedOrder() {
   const { currentUser } = useCurrentUser();
-  if (currentUser === null) return redirect("/signin");
-  const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY as string;
   const router = useRouter();
   const [order, setOrder] = useState<Order>();
   const [secondsLeft, setSecondsLeft] = useState<number>();
   const [isPaying, setIsPaying] = useState(false);
+  const [paymentErrors, setPaymentErrors] = useState<RequestError[] | null>(
+    null,
+  );
   const params = useParams<{ id: string }>();
   const orderId = params.id;
   const totalWindowRef = useRef<number>(null);
@@ -101,6 +103,7 @@ export default function CreatedOrder() {
     console.log({ token });
     if (!order || isPaying) return;
     setIsPaying(true);
+    setPaymentErrors(null);
     try {
       await submitPayment();
     } finally {
@@ -117,6 +120,10 @@ export default function CreatedOrder() {
     }, 1000);
     return () => clearInterval(intervalRef.current);
   }, [order]);
+  if (currentUser === null) {
+    return redirect(`/auth/signin?returnTo=/orders/${orderId}`);
+  }
+  const STRIPE_KEY = process.env.NEXT_PUBLIC_STRIPE_KEY as string;
   if (errors) {
     return (
       <div className="max-w-md mx-auto px-6 py-24 text-center">
@@ -294,7 +301,7 @@ export default function CreatedOrder() {
           <StripeCheckoutButton
             stripeKey={STRIPE_KEY}
             token={handleToken}
-            amount={order.ticket.price * 100}
+            amount={Math.round(order.ticket.price * 100)}
             currency="usd"
             name="VenuePass"
             description={order.ticket.title}
@@ -324,7 +331,10 @@ export default function CreatedOrder() {
           </button>
         </div>
       ) : (
-        <button className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-fuchsia-500 hover:opacity-90 transition rounded-md px-6 py-3.5 text-sm font-bold">
+        <button
+          onClick={() => router.push(`/tickets/${order.ticket.id}`)}
+          className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-fuchsia-500 hover:opacity-90 transition rounded-md px-6 py-3.5 text-sm font-bold"
+        >
           Back to event <ChevronRight size={16} />
         </button>
       )}

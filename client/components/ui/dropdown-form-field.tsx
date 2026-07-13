@@ -1,3 +1,5 @@
+"use client";
+
 import type { DropdownFormFieldProps } from "@/models/form-field.model";
 
 export default function DropdownFormField({
@@ -28,9 +30,11 @@ export default function DropdownFormField({
       <span
         className={`relative group flex items-center bg-zinc-800/60 border focus-within:bg-zinc-800 focus-within:ring-1 focus-within:ring-violet-500/40 transition-all duration-200 rounded-none ${hasError ? "border-red-500" : "border-zinc-700 focus-within:border-violet-500"} ${wrapperClassName}`}
       >
-        <span className="absolute left-3.5 text-zinc-600 group-focus-within:text-violet-400 transition-colors duration-200 pointer-events-none shrink-0">
-          {icon}
-        </span>
+        {icon && (
+          <span className="absolute left-3.5 text-zinc-600 group-focus-within:text-violet-400 transition-colors duration-200 pointer-events-none shrink-0">
+            {icon}
+          </span>
+        )}
         <select
           name={name}
           id={id}
@@ -38,7 +42,7 @@ export default function DropdownFormField({
           onChange={(e) => onChange(e.target.value)}
           required={required}
           aria-invalid={hasError}
-          className={`w-full appearance-none bg-transparent text-zinc-100 placeholder-zinc-600 pl-10 pr-4 py-3 text-sm focus:outline-none ${inputClassName}`}
+          className={`w-full appearance-none bg-transparent text-zinc-100 placeholder-zinc-600 ${icon ? "pl-10" : "pl-4"} pr-4 py-3 text-sm focus:outline-none ${inputClassName}`}
         >
           <option value="" disabled className="bg-black text-white">
             {placeholder}

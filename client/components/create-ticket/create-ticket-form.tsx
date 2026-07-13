@@ -32,7 +32,7 @@ export default function CreateTicketForm() {
   const [eventDate, setEventDate] = useState("");
   const [eventType, setEventType] = useState("");
   const [category, setCategory] = useState("");
-  const [details, setDetails] = useState("");
+  const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [seats, setSeats] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -61,7 +61,7 @@ export default function CreateTicketForm() {
       eventDate: eventDate ? new Date(`${eventDate}`).toISOString() : "",
       eventType,
       category,
-      ...(details && { details }),
+      ...(description && { description }),
       ...(imageUrl && { imageUrl }),
       ...(seats && { seats: seats.split(",") }),
       ...(quantity && { quantity }),
@@ -96,13 +96,13 @@ export default function CreateTicketForm() {
   };
 
   useEffect(() => {
-    if (allocationMode === "seats" && seats !== "") {
+    if (allocationMode === "seats") {
       setQuantity("");
     }
-    if (allocationMode === "quantity" && quantity !== "") {
+    if (allocationMode === "quantity") {
       setSeats("");
     }
-  }, [allocationMode, seats, quantity]);
+  }, [allocationMode]);
   return (
     <>
       <form className="pt-7 pb-6 space-y-5" onSubmit={onFormSubmitHandler}>
@@ -217,8 +217,8 @@ export default function CreateTicketForm() {
               />
               <DropdownFormField
                 label="Event Type"
-                name="price"
-                id="price"
+                name="eventType"
+                id="eventType"
                 placeholder="Select Event Type"
                 icon={<TicketIcon customClass="w-3 h-3 text-gray-500" />}
                 labelClassName="flex items-center mt-2"
@@ -256,8 +256,8 @@ export default function CreateTicketForm() {
                 placeholder="Add extra details buyers should know about this ticket..."
                 labelClassName="flex items-center justify-between"
                 inputClassName="tracking-widest resize-y"
-                value={details}
-                onChange={setDetails}
+                value={description}
+                onChange={setDescription}
                 hasError={errorFields.includes("description")}
               />
               <FormField

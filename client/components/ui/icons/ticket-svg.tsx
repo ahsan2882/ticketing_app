@@ -5,7 +5,7 @@ export default function TicketIcon({ customClass }: { customClass: string }) {
     <svg
       aria-hidden="true"
       focusable="false"
-      className={`${customClass}`}
+      className={customClass}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

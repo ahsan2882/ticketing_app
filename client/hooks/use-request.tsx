@@ -25,7 +25,12 @@ export function useRequest<TResponse = unknown>({
       const response =
         method === "get"
           ? await axios.get<TResponse>(url)
-          : await axios[method]<TResponse>(url, body);
+          : method === "delete"
+            ? await axios.delete<TResponse>(
+                url,
+                body ? { data: body } : undefined,
+              )
+            : await axios[method]<TResponse>(url, body);
       if (onSuccess) {
         onSuccess(response.data);
       }

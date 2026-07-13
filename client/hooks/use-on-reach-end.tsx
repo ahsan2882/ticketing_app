@@ -16,6 +16,8 @@ export function useOnReachEnd(
     setNode(el);
   }, []);
 
+  const { root, rootMargin, threshold } = options ?? {};
+
   useEffect(() => {
     if (!node) return;
 
@@ -23,12 +25,12 @@ export function useOnReachEnd(
       (entries) => {
         if (entries[0].isIntersecting) callbackRef.current();
       },
-      { rootMargin: "400px", threshold: 0, ...options },
+      { rootMargin: "400px", threshold: 0, root },
     );
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [node, options]);
+  }, [node, root, rootMargin, threshold]);
 
   return ref;
 }

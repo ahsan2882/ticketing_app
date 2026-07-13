@@ -40,6 +40,7 @@ const ticketSchema = new mongoose.Schema(
           title,
           price,
           userId,
+          version: doc.get("version"),
         };
       },
     },

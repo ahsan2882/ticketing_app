@@ -163,6 +163,7 @@ const ticketSchema = new mongoose.Schema<TicketDoc, TicketModel>(
           description,
           imageUrl,
           status,
+          version: doc.get("version"),
         };
       },
     },

@@ -1,6 +1,5 @@
 "use client";
 
-import { EventType } from "@venuepass/common/client";
 import {
   CalendarDays,
   ChevronRight,
@@ -14,18 +13,10 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRequest } from "../../../hooks/use-request";
 import type { Order } from "../../../models/order.model";
-import type { TicketModel } from "../../../models/ticket.model";
-
-const CATEGORY_STYLES = {
-  [EventType.Concert]: "bg-purple-500/15 text-purple-300 border-purple-500/30",
-  [EventType.Sports]:
-    "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  [EventType.Theatre]: "bg-orange-500/15 text-orange-300 border-orange-500/30",
-  [EventType.Comedy]: "bg-blue-500/15 text-blue-300 border-blue-500/30",
-  [EventType.Festival]: "bg-pink-500/15 text-pink-300 border-pink-500/30",
-  [EventType.Conference]:
-    "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-};
+import {
+  CATEGORY_STYLES,
+  type TicketModel,
+} from "../../../models/ticket.model";
 
 export default function TicketDetails() {
   const router = useRouter();
@@ -33,13 +24,14 @@ export default function TicketDetails() {
   const [saved, setSaved] = useState(false);
   const params = useParams<{ id: string }>();
   const ticketId = params.id;
-  const { doRequest: fetchSingleTicket } = useRequest<TicketModel>({
-    url: `/api/tickets/${ticketId}`,
-    method: "get",
-    onSuccess: (ticket) => {
-      setTicket(ticket);
-    },
-  });
+  const { doRequest: fetchSingleTicket, errors: fetchErrors } =
+    useRequest<TicketModel>({
+      url: `/api/tickets/${ticketId}`,
+      method: "get",
+      onSuccess: (ticket) => {
+        setTicket(ticket);
+      },
+    });
   useEffect(() => {
     const fetchTicket = async () => {
       await fetchSingleTicket();
@@ -47,7 +39,7 @@ export default function TicketDetails() {
     fetchTicket();
   }, []);
 
-  const { doRequest: createOrder } = useRequest<Order>({
+  const { doRequest: createOrder, errors: orderErrors } = useRequest<Order>({
     url: "/api/orders",
     method: "post",
     body: { ticketId },
@@ -64,6 +56,13 @@ export default function TicketDetails() {
   return (
     <>
       {!ticket && <p>Loading...</p>}
+      {fetchErrors && fetchErrors.length > 0 && (
+        <div className="text-red-500 py-4">
+          {fetchErrors.map((err, i) => (
+            <div key={i}>{err.message}</div>
+          ))}
+        </div>
+      )}
       {ticket && (
         <>
           <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-6 font-mono uppercase tracking-wide">
@@ -92,7 +91,7 @@ export default function TicketDetails() {
                   )}
                   <div className="absolute top-4 left-4">
                     <span
-                      className={`text-[10px] font-mono uppercase tracking-wider border rounded px-2 py-1 ${CATEGORY_STYLES[ticket.eventType]}`}
+                      className={`text-[10px] font-mono uppercase tracking-wider border rounded px-2 py-1 ${CATEGORY_STYLES[ticket.eventType]?.chip}`}
                     >
                       {ticket.category}
                     </span>
@@ -193,7 +192,13 @@ export default function TicketDetails() {
                     <span className="text-sm text-gray-400">Total</span>
                     <span className="text-xl font-bold">${ticket.price}</span>
                   </div>
-
+                  {orderErrors && orderErrors.length > 0 && (
+                    <div className="text-red-500 py-4">
+                      {orderErrors.map((err, i) => (
+                        <div key={i}>{err.message}</div>
+                      ))}
+                    </div>
+                  )}
                   <button
                     className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-fuchsia-500 hover:opacity-90 text-black transition rounded-md px-6 py-3.5 text-sm font-bold"
                     onClick={createAndNavigateToOrder}
