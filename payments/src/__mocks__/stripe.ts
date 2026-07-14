@@ -7,6 +7,11 @@ export const stripe = {
       currency: "usd",
       status: "requires_payment_method",
     }),
+    retrieve: jest.fn().mockImplementation(() => Promise.resolve({
+      id: "pi_existing_123",
+      client_secret: "pi_existing_123_secret",
+      status: "requires_payment_method",
+    })),
   },
   refunds: {
     create: jest.fn().mockResolvedValue({

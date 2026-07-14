@@ -415,3 +415,67 @@ describe("find all orders - repeat calls", () => {
     expect(second.body).toHaveLength(2);
   });
 });
+
+describe("find all orders - ordering and pagination edge cases", () => {
+  it("returns orders newest first", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const cookie = await global.signin(userId);
+    const olderTicket = await createTicket({ title: "Older" });
+    const newerTicket = await createTicket({ title: "Newer" });
+    const olderOrder = await createOrder(userId, olderTicket);
+    const newerOrder = await createOrder(userId, newerTicket);
+
+    await Order.collection.updateOne(
+      { _id: olderOrder._id },
+      { $set: { createdAt: new Date("2026-01-01T00:00:00.000Z") } },
+    );
+    await Order.collection.updateOne(
+      { _id: newerOrder._id },
+      { $set: { createdAt: new Date("2026-01-02T00:00:00.000Z") } },
+    );
+
+    const { body } = await request(app)
+      .get("/api/orders")
+      .set("Cookie", cookie)
+      .expect(200);
+
+    expect(body.map((order: any) => order.id)).toEqual([
+      newerOrder.id,
+      olderOrder.id,
+    ]);
+  });
+
+  it.each(["0", "-5", "1.5", "999999999999999999999999"])(
+    "falls back to the default page size for limit=%s",
+    async (limit) => {
+      const userId = new mongoose.Types.ObjectId().toHexString();
+      const cookie = await global.signin(userId);
+      for (let index = 0; index < 21; index++) {
+        const ticket = await createTicket({ title: `Edge Ticket ${index}` });
+        await createOrder(userId, ticket);
+      }
+
+      const { body } = await request(app)
+        .get(`/api/orders?limit=${limit}`)
+        .set("Cookie", cookie)
+        .expect(200);
+
+      expect(body).toHaveLength(20);
+    },
+  );
+
+  it("treats an invalid negative skip as zero", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const cookie = await global.signin(userId);
+    const ticket = await createTicket();
+    const order = await createOrder(userId, ticket);
+
+    const { body } = await request(app)
+      .get("/api/orders?skip=-1")
+      .set("Cookie", cookie)
+      .expect(200);
+
+    expect(body).toHaveLength(1);
+    expect(body[0].id).toEqual(order.id);
+  });
+});

@@ -1,4 +1,4 @@
-import type { ExpirationCompleteEvent } from "@venuepass/common";
+import { SUBJECTS, type ExpirationCompleteEvent } from "@venuepass/common";
 import mongoose from "mongoose";
 import type { JsMsg } from "nats";
 import { Order, OrderStatus } from "../../../models/order.model";
@@ -47,6 +47,7 @@ describe("ExpirationCompleteListener", () => {
     const listener = new ExpirationCompleteListener(client);
 
     expect(listener.durableName).toEqual("orders-service-expiration-complete");
+    expect(listener.subject).toEqual(SUBJECTS.ExpirationComplete);
   });
 
   it("accepts a custom durable name", () => {
@@ -143,5 +144,20 @@ describe("ExpirationCompleteListener", () => {
 
     const updatedOrder = await Order.findById(order.id);
     expect(updatedOrder!.status).toEqual(OrderStatus.COMPLETED);
+  });
+
+  it("does not ack when cancellation publication fails", async () => {
+    const { listener, order, msg, data } = await setup();
+    (
+      OrderCancelledPublisher.prototype.publish as jest.Mock
+    ).mockRejectedValueOnce(new Error("cancel publish failed"));
+
+    await expect(listener.onMessage(data, msg)).rejects.toThrow(
+      "cancel publish failed",
+    );
+
+    const persisted = await Order.findById(order.id);
+    expect(persisted?.status).toEqual(OrderStatus.CANCELLED);
+    expect(msg.ack).not.toHaveBeenCalled();
   });
 });

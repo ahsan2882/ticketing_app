@@ -831,3 +831,85 @@ describe("create tickets — eventDate must be in the future (end-to-end)", () =
       .expect(400);
   });
 });
+
+describe("create tickets — additional uncovered cases", () => {
+  let cookie: string[];
+
+  beforeEach(async () => {
+    cookie = await global.signin();
+  });
+
+  it.each(["title", "artist", "venue", "city", "description"])(
+    "returns 400 when %s is provided as a non-string value",
+    async (field) => {
+      await request(app)
+        .post("/api/tickets")
+        .set("Cookie", cookie)
+        .send(validTicketPayload({ [field]: 123 }))
+        .expect(400);
+    },
+  );
+
+  it.each(["artist", "venue", "city"])(
+    "returns 400 when %s is fewer than 3 characters",
+    async (field) => {
+      await request(app)
+        .post("/api/tickets")
+        .set("Cookie", cookie)
+        .send(validTicketPayload({ [field]: "ab" }))
+        .expect(400);
+    },
+  );
+
+  it("rejects the legacy singular seat field and does not persist or publish", async () => {
+    await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seat: "A1" }))
+      .expect(400);
+
+    expect(await Ticket.countDocuments()).toEqual(0);
+    expect(TicketCreatedPublisher.prototype.publish).not.toHaveBeenCalled();
+  });
+
+  it("accepts a seats array without requiring quantity", async () => {
+    const { body } = await request(app)
+      .post("/api/tickets")
+      .set("Cookie", cookie)
+      .send(validTicketPayload({ seats: ["A1", "A2"] }))
+      .expect(201);
+
+    expect(body).toHaveLength(2);
+    expect(body.map((ticket: any) => ticket.seat)).toEqual(["A1", "A2"]);
+  });
+
+  it("converts a schema ValidationError raised inside the transaction into a 400 response", async () => {
+    const validationError = Object.assign(
+      new Error("schema validation failed"),
+      {
+        name: "ValidationError",
+        errors: {
+          title: { message: "schema validation failed" },
+        },
+      },
+    );
+    const saveSpy = jest
+      .spyOn(Ticket.prototype, "save")
+      .mockImplementation(function () {
+        return Promise.reject(validationError);
+      });
+
+    try {
+      await request(app)
+        .post("/api/tickets")
+        .set("Cookie", cookie)
+        .send(validTicketPayload())
+        .expect(400);
+
+      expect(await Ticket.countDocuments()).toEqual(0);
+      expect(TicketCreatedPublisher.prototype.publish).not.toHaveBeenCalled();
+    } finally {
+      saveSpy.mockRestore();
+    }
+  });
+});

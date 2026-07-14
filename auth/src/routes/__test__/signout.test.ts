@@ -200,4 +200,13 @@ describe("signout flow - ", () => {
   it("returns 405 for PUT /api/users/signout (only POST is registered)", async () => {
     await request(app).put("/api/users/signout").expect(405);
   });
+
+  it("sets Allow: POST and a structured error for unsupported signout methods", async () => {
+    const response = await request(app).patch("/api/users/signout").expect(405);
+
+    expect(response.headers.allow).toBe("POST");
+    expect(response.body).toEqual({
+      errors: [{ message: "Method not allowed" }],
+    });
+  });
 });

@@ -350,3 +350,222 @@ describe("create payment — Stripe integration", () => {
     expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
   });
 });
+
+describe("create payment — additional request validation", () => {
+  it.each([123, { value: "not-an-id" }, ["not-an-id"]])(
+    "returns 400 when orderId is not a string: %p",
+    async (orderId) => {
+      const userId = new mongoose.Types.ObjectId().toHexString();
+
+      await request(app)
+        .post("/api/payments")
+        .set("Cookie", await global.signin(userId))
+        .send({ orderId })
+        .expect(400);
+    },
+  );
+});
+
+describe("create payment — existing PaymentIntent reuse", () => {
+  let userId: string;
+  let cookie: string[];
+
+  beforeEach(async () => {
+    userId = new mongoose.Types.ObjectId().toHexString();
+    cookie = await global.signin(userId);
+    (stripe.paymentIntents.retrieve as jest.Mock).mockImplementation(() =>
+      Promise.resolve({
+        id: "pi_existing_123",
+        client_secret: "pi_existing_123_secret",
+        status: "requires_payment_method",
+      }),
+    );
+  });
+
+  it("returns the existing client secret without creating another PaymentIntent", async () => {
+    const order = await createOrder(userId);
+    order.set({ stripeId: "pi_existing_123" });
+    await order.save();
+
+    const response = await request(app)
+      .post("/api/payments")
+      .set("Cookie", cookie)
+      .send(validPaymentPayload(order.id))
+      .expect(201);
+
+    expect(stripe.paymentIntents.retrieve).toHaveBeenCalledWith(
+      "pi_existing_123",
+    );
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(response.body).toEqual({
+      clientSecret: "pi_existing_123_secret",
+    });
+  });
+
+  it.each(["canceled", "succeeded"])(
+    "creates a new PaymentIntent when the stored intent is %s",
+    async (status) => {
+      const order = await createOrder(userId);
+      order.set({ stripeId: "pi_terminal_123" });
+      await order.save();
+
+      (stripe.paymentIntents.retrieve as jest.Mock).mockResolvedValueOnce({
+        id: "pi_terminal_123",
+        client_secret: "terminal_secret",
+        status,
+      });
+
+      await request(app)
+        .post("/api/payments")
+        .set("Cookie", cookie)
+        .send(validPaymentPayload(order.id))
+        .expect(201);
+
+      expect(stripe.paymentIntents.create).toHaveBeenCalledTimes(1);
+
+      const persisted = await Order.findById(order.id);
+      expect(persisted?.stripeId).toEqual("pi_mock_123");
+    },
+  );
+
+  it("propagates a Stripe retrieval failure without creating a new intent", async () => {
+    const order = await createOrder(userId);
+    order.set({ stripeId: "pi_existing_123" });
+    await order.save();
+
+    (stripe.paymentIntents.retrieve as jest.Mock).mockRejectedValueOnce(
+      new Error("Stripe unavailable"),
+    );
+
+    await request(app)
+      .post("/api/payments")
+      .set("Cookie", cookie)
+      .send(validPaymentPayload(order.id))
+      .expect((response) => {
+        expect(response.status).toBeGreaterThanOrEqual(400);
+      });
+
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("create payment — persistence and Stripe error recovery", () => {
+  let userId: string;
+  let cookie: string[];
+
+  beforeEach(async () => {
+    userId = new mongoose.Types.ObjectId().toHexString();
+    cookie = await global.signin(userId);
+    (stripe.paymentIntents.retrieve as jest.Mock).mockImplementation(() =>
+      Promise.resolve({
+        id: "pi_existing_123",
+        client_secret: "pi_existing_123_secret",
+        status: "requires_payment_method",
+      }),
+    );
+  });
+
+  it("stores the newly created PaymentIntent id on the order", async () => {
+    const order = await createOrder(userId);
+
+    await request(app)
+      .post("/api/payments")
+      .set("Cookie", cookie)
+      .send(validPaymentPayload(order.id))
+      .expect(201);
+
+    const persisted = await Order.findById(order.id);
+    expect(persisted?.stripeId).toEqual("pi_mock_123");
+  });
+
+  it("returns the existing intent when Stripe reports an idempotency conflict", async () => {
+    const order = await createOrder(userId);
+    const error = {
+      type: "api_error",
+      rawType: "idempotency_error",
+      raw: { id: "pi_from_idempotency_error" },
+    };
+
+    (stripe.paymentIntents.create as jest.Mock).mockRejectedValueOnce(error);
+    (stripe.paymentIntents.retrieve as jest.Mock).mockResolvedValueOnce({
+      id: "pi_from_idempotency_error",
+      client_secret: "pi_recovered_secret",
+      status: "requires_action",
+    });
+
+    const response = await request(app)
+      .post("/api/payments")
+      .set("Cookie", cookie)
+      .send(validPaymentPayload(order.id))
+      .expect(201);
+
+    expect(stripe.paymentIntents.retrieve).toHaveBeenCalledWith(
+      "pi_from_idempotency_error",
+    );
+    expect(response.body).toEqual({ clientSecret: "pi_recovered_secret" });
+
+    const persisted = await Order.findById(order.id);
+    expect(persisted?.stripeId).toBeUndefined();
+  });
+
+  it.each(["canceled", "succeeded"])(
+    "rethrows an idempotency conflict when the recovered intent is %s",
+    async (status) => {
+      const order = await createOrder(userId);
+      const error = {
+        type: "api_error",
+        rawType: "idempotency_error",
+        raw: { id: "pi_terminal_recovered" },
+      };
+
+      (stripe.paymentIntents.create as jest.Mock).mockRejectedValueOnce(error);
+      (stripe.paymentIntents.retrieve as jest.Mock).mockResolvedValueOnce({
+        id: "pi_terminal_recovered",
+        client_secret: "terminal_secret",
+        status,
+      });
+
+      await request(app)
+        .post("/api/payments")
+        .set("Cookie", cookie)
+        .send(validPaymentPayload(order.id))
+        .expect((response) => {
+          expect(response.status).toBeGreaterThanOrEqual(400);
+        });
+    },
+  );
+
+  it("propagates non-idempotency Stripe creation errors", async () => {
+    const order = await createOrder(userId);
+    (stripe.paymentIntents.create as jest.Mock).mockRejectedValueOnce(
+      new Error("Stripe create failed"),
+    );
+
+    await request(app)
+      .post("/api/payments")
+      .set("Cookie", cookie)
+      .send(validPaymentPayload(order.id))
+      .expect((response) => {
+        expect(response.status).toBeGreaterThanOrEqual(400);
+      });
+  });
+
+  it("returns 500 when persisting the PaymentIntent id fails", async () => {
+    const order = await createOrder(userId);
+    const updateSpy = jest
+      .spyOn(Order, "updateOne")
+      .mockRejectedValueOnce(new Error("Mongo update failed"));
+
+    try {
+      await request(app)
+        .post("/api/payments")
+        .set("Cookie", cookie)
+        .send(validPaymentPayload(order.id))
+        .expect((response) => {
+          expect(response.status).toBeGreaterThanOrEqual(400);
+        });
+    } finally {
+      updateSpy.mockRestore();
+    }
+  });
+});

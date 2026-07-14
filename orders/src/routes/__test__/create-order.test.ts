@@ -434,3 +434,49 @@ describe("create order - successful order creation", () => {
     expect(orders).toHaveLength(1);
   });
 });
+
+describe("create order - downstream and persistence failures", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("does not publish or persist an order when its transactional save fails", async () => {
+    const ticket = await createTicket();
+    const cookie = await global.signin();
+    const saveSpy = jest
+      .spyOn(Order.prototype, "save")
+      .mockRejectedValueOnce(new Error("order save failed"));
+
+    try {
+      await request(app)
+        .post("/api/orders")
+        .set("Cookie", cookie)
+        .send({ ticketId: ticket.id })
+        .expect(500);
+
+      expect(await Order.countDocuments({ ticket: ticket.id })).toBe(0);
+      expect(OrderCreatedPublisher.prototype.publish).not.toHaveBeenCalled();
+    } finally {
+      saveSpy.mockRestore();
+    }
+  });
+
+  it("keeps the committed order for retry/recovery when event publication fails", async () => {
+    const ticket = await createTicket();
+    const cookie = await global.signin();
+    (
+      OrderCreatedPublisher.prototype.publish as jest.Mock
+    ).mockRejectedValueOnce(new Error("order-created publish failed"));
+
+    await request(app)
+      .post("/api/orders")
+      .set("Cookie", cookie)
+      .send({ ticketId: ticket.id })
+      .expect(500);
+
+    const persisted = await Order.findOne({ ticket: ticket.id });
+    expect(persisted).not.toBeNull();
+    expect(persisted?.status).toEqual(OrderStatus.CREATED);
+    expect(OrderCreatedPublisher.prototype.publish).toHaveBeenCalledTimes(1);
+  });
+});

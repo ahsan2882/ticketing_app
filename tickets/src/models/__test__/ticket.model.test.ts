@@ -194,3 +194,74 @@ describe("ticket model - ", () => {
     });
   });
 });
+
+describe("ticket model - additional schema coverage", () => {
+  it("rejects an invalid status value", async () => {
+    const ticket = Ticket.build(validAttrs());
+    ticket.set({ status: "not-a-real-status" });
+
+    await expect(ticket.save()).rejects.toThrow();
+  });
+
+  it("keeps userId immutable after the ticket has been persisted", async () => {
+    const attrs = validAttrs();
+    const ticket = Ticket.build(attrs);
+    await ticket.save();
+
+    ticket.set({ userId: new mongoose.Types.ObjectId().toHexString() });
+    await ticket.save();
+
+    const persistedTicket = await Ticket.findById(ticket.id);
+    expect(persistedTicket?.userId).toEqual(attrs.userId);
+  });
+
+  it("trims every schema field configured with trim", async () => {
+    const ticket = Ticket.build({
+      ...validAttrs(),
+      title: "  Concert  ",
+      artist: "  Artist  ",
+      venue: "  Arena  ",
+      city: "  Karachi  ",
+      seat: "  A-12  ",
+      description: "  Front row  ",
+      imageUrl: "  https://example.com/ticket.jpg  ",
+    });
+
+    await ticket.save();
+
+    expect(ticket.title).toEqual("Concert");
+    expect(ticket.artist).toEqual("Artist");
+    expect(ticket.venue).toEqual("Arena");
+    expect(ticket.city).toEqual("Karachi");
+    expect(ticket.seat).toEqual("A-12");
+    expect(ticket.description).toEqual("Front row");
+    expect(ticket.imageUrl).toEqual("https://example.com/ticket.jpg");
+  });
+
+  it("serializes eventDate and optional descriptive fields", async () => {
+    const eventDate = new Date(Date.now() + 86_400_000);
+    const ticket = Ticket.build({
+      ...validAttrs(),
+      eventDate,
+      description: "Front row ticket",
+      imageUrl: "https://example.com/ticket.jpg",
+    });
+    await ticket.save();
+
+    const json = ticket.toJSON();
+    expect(json.eventDate).toEqual(eventDate);
+    expect(json.description).toEqual("Front row ticket");
+    expect(json.imageUrl).toEqual("https://example.com/ticket.jpg");
+  });
+
+  it("persists orderId internally but excludes it from serialized output", async () => {
+    const ticket = Ticket.build(validAttrs());
+    const orderId = new mongoose.Types.ObjectId().toHexString();
+    ticket.set({ status: TicketStatus.RESERVED, orderId });
+    await ticket.save();
+
+    const persistedTicket = await Ticket.findById(ticket.id);
+    expect(persistedTicket?.orderId).toEqual(orderId);
+    expect(ticket.toJSON()).not.toHaveProperty("orderId");
+  });
+});

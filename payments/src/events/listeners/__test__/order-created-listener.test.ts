@@ -100,3 +100,36 @@ describe("OrderCreatedListener", () => {
     expect(msg.ack).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("OrderCreatedListener - existing projection handling", () => {
+  it("does not overwrite an existing order when the create event is redelivered with different data", async () => {
+    const { listener, data, msg } = await setup();
+    const originalUserId = new mongoose.Types.ObjectId().toHexString();
+
+    await Order.build({
+      id: data.id,
+      userId: originalUserId,
+      status: OrderStatus.AWAITING_PAYMENT,
+      price: 10,
+    }).save();
+
+    await listener.onMessage(
+      {
+        ...data,
+        userId: new mongoose.Types.ObjectId().toHexString(),
+        status: OrderStatus.CANCELLED,
+        ticket: {
+          ...data.ticket,
+          price: 999,
+        },
+      },
+      msg,
+    );
+
+    const persisted = await Order.findById(data.id);
+    expect(persisted?.userId).toEqual(originalUserId);
+    expect(persisted?.status).toEqual(OrderStatus.AWAITING_PAYMENT);
+    expect(persisted?.price).toEqual(10);
+    expect(msg.ack).toHaveBeenCalledTimes(1);
+  });
+});
