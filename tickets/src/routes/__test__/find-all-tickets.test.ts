@@ -22,8 +22,8 @@ const createTicket = async (
     eventType: EventType.Concert,
     category: TicketCategory.STANDARD,
     seat: "A1",
-    status: "available",
-  }, { ...overrides });
+    ...overrides,
+  });
   await ticket.save();
   return ticket;
 };
@@ -87,7 +87,7 @@ describe("find all tickets — unauthenticated", () => {
     await createTicket(); // available
     await updateTicketStatus(TicketStatus.SOLD);
     await updateTicketStatus(TicketStatus.RESERVED);
-    
+
     const { body } = await request(app).get("/api/tickets").expect(200);
     expect(body.length).toBeLessThan(3);
   });
@@ -129,7 +129,8 @@ describe("find all tickets — unauthenticated: public fields only", () => {
     });
 
     const { body } = await request(app).get("/api/tickets").expect(200);
-    const ticket = body.find((t: any) => t.title === "Public Fields Test") || body[0];
+    const ticket =
+      body.find((t: any) => t.title === "Public Fields Test") || body[0];
 
     const expectedPublicFields = [
       "title",
@@ -208,7 +209,8 @@ describe("find all tickets — authenticated: private fields included", () => {
       .set("Cookie", cookie)
       .expect(200);
 
-    const ticket = body.find((t: any) => t.title === "Public Fields Auth Test") || body[0];
+    const ticket =
+      body.find((t: any) => t.title === "Public Fields Auth Test") || body[0];
     const expectedFields = [
       "title",
       "price",
@@ -354,10 +356,15 @@ describe("find all tickets — auth state comparison", () => {
     const cookie = await global.signin();
 
     const unauthRes = await request(app).get("/api/tickets").expect(200);
-    const authRes = await request(app).get("/api/tickets").set("Cookie", cookie).expect(200);
+    const authRes = await request(app)
+      .get("/api/tickets")
+      .set("Cookie", cookie)
+      .expect(200);
 
     // Both responses should have same fields since route only returns PUBLIC_FIELDS
-    expect(Object.keys(unauthRes.body[0])).toEqual(Object.keys(authRes.body[0]));
+    expect(Object.keys(unauthRes.body[0])).toEqual(
+      Object.keys(authRes.body[0]),
+    );
   });
 });
 
@@ -498,5 +505,59 @@ describe("find all tickets — sort order", () => {
       .expect(200);
 
     expect(body).toHaveLength(2);
+  });
+});
+
+describe("find all tickets — deterministic marketplace ordering", () => {
+  it("sorts by eventDate ascending and then by id for equal dates", async () => {
+    const sharedDate = new Date(Date.now() + 3 * 86_400_000);
+    const laterTicket = await createTicket({
+      title: "Later Event",
+      eventDate: new Date(Date.now() + 5 * 86_400_000),
+    });
+    const firstSharedDateTicket = await createTicket({
+      title: "First Same-Date Event",
+      eventDate: sharedDate,
+    });
+    const secondSharedDateTicket = await createTicket({
+      title: "Second Same-Date Event",
+      eventDate: sharedDate,
+    });
+    const earliestTicket = await createTicket({
+      title: "Earliest Event",
+      eventDate: new Date(Date.now() + 86_400_000),
+    });
+
+    const { body } = await request(app)
+      .get("/api/tickets?limit=10")
+      .set("Cookie", await global.signin())
+      .expect(200);
+
+    const expectedSharedDateOrder = [
+      firstSharedDateTicket.id,
+      secondSharedDateTicket.id,
+    ].sort();
+
+    expect(body.map((ticket: any) => ticket.id)).toEqual([
+      earliestTicket.id,
+      ...expectedSharedDateOrder,
+      laterTicket.id,
+    ]);
+  });
+
+  it("falls back to default pagination for zero or negative query values", async () => {
+    for (let index = 0; index < 25; index++) {
+      await createTicket({
+        title: `Fallback Ticket ${index}`,
+        eventDate: new Date(Date.now() + (index + 1) * 60_000),
+      });
+    }
+
+    const { body } = await request(app)
+      .get("/api/tickets?limit=0&skip=-10")
+      .set("Cookie", await global.signin())
+      .expect(200);
+
+    expect(body).toHaveLength(20);
   });
 });

@@ -291,4 +291,19 @@ describe("currentUser flow - ", () => {
       errors: [{ message: "Method not allowed" }],
     });
   });
+
+  it("returns the current user's name after signin", async () => {
+    const cookie = await global.signin(
+      "current-name@test.com",
+      "validpass",
+      "Current Name",
+    );
+
+    const response = await request(app)
+      .get("/api/users/currentuser")
+      .set("Cookie", cookie)
+      .expect(200);
+
+    expect(response.body.currentUser).toHaveProperty("name", "Current Name");
+  });
 });

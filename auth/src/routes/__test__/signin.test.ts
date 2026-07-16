@@ -1,7 +1,13 @@
 import request from "supertest";
 import { app } from "../../app";
+import { User } from "../../models/user.model";
+import { Password } from "../../services/password";
 
 describe("signin flow - ", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it("returns 200 on successful signin", async () => {
     await global.signin();
   });
@@ -371,5 +377,144 @@ describe("signin flow - ", () => {
       .post("/api/users/signin")
       .send({ email: "user2@test.com", password: "pass1111" })
       .expect(400);
+  });
+
+  it("returns 400 when the password exceeds 50 characters", async () => {
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "test@test.com", password: "a".repeat(51) })
+      .expect(400);
+
+    const messages = response.body.errors.map(
+      (error: { message: string }) => error.message,
+    );
+    expect(messages).toContain("Password must be between 1 and 50 characters");
+  });
+
+  it("accepts a password at the 50-character maximum boundary", async () => {
+    const password = "a".repeat(50);
+    await User.build({
+      email: "max-password@test.com",
+      password,
+      name: "Maximum Password",
+    }).save();
+
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "max-password@test.com", password })
+      .expect(200);
+  });
+
+  it("finds an existing user when the signin email uses different casing", async () => {
+    await global.signin("case-signin@test.com", "validpass");
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "CASE-SIGNIN@Test.COM", password: "validpass" })
+      .expect(200);
+
+    expect(response.body.email).toBe("case-signin@test.com");
+  });
+
+  it("returns invalid credentials when the stored password format is malformed", async () => {
+    await User.collection.insertOne({
+      email: "malformed@test.com",
+      password: "not-a-valid-stored-hash",
+      name: "Malformed Password",
+    });
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "malformed@test.com", password: "validpass" })
+      .expect(400);
+
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ message: "Invalid credentials" }),
+      ]),
+    );
+  });
+
+  it("returns 404 for unsupported signin methods", async () => {
+    const response = await request(app).get("/api/users/signin").expect(404);
+
+    expect(response.body).toEqual({
+      errors: [{ message: "Route not found in auth service" }],
+    });
+  });
+
+  it("returns a generic server error when the user lookup fails", async () => {
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const findOneSpy = jest
+      .spyOn(User, "findOne")
+      .mockRejectedValueOnce(new Error("database unavailable"));
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "failure@test.com", password: "validpass" })
+      .expect(500);
+
+    expect(response.body).toHaveProperty("errors");
+    expect(findOneSpy).toHaveBeenCalledWith({ email: "failure@test.com" });
+    expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it("returns a generic server error when password comparison fails unexpectedly", async () => {
+    await User.build({
+      email: "compare-failure@test.com",
+      password: "validpass",
+      name: "Compare Failure",
+    }).save();
+
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const compareSpy = jest
+      .spyOn(Password, "compare")
+      .mockRejectedValueOnce(new Error("crypto unavailable"));
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "compare-failure@test.com", password: "validpass" })
+      .expect(500);
+
+    expect(response.body).toHaveProperty("errors");
+    expect(compareSpy).toHaveBeenCalledTimes(1);
+    expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it("accepts a one-character password at the signin minimum boundary", async () => {
+    await User.build({
+      email: "minimum-password@test.com",
+      password: "a",
+      name: "Minimum Password",
+    }).save();
+
+    await request(app)
+      .post("/api/users/signin")
+      .send({ email: "minimum-password@test.com", password: "a" })
+      .expect(200);
+  });
+
+  it("returns a server error when an existing user's password is non-string", async () => {
+    await User.build({
+      email: "numeric-signin@test.com",
+      password: "validpass",
+      name: "Numeric Signin",
+    }).save();
+
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const response = await request(app)
+      .post("/api/users/signin")
+      .send({ email: "numeric-signin@test.com", password: 123456 })
+      .expect(500);
+
+    expect(response.body).toHaveProperty("errors");
+    expect(consoleSpy).toHaveBeenCalled();
   });
 });

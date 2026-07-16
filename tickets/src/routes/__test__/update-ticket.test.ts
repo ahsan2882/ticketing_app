@@ -1104,3 +1104,34 @@ describe("update ticket - status field mass-assignment protection", () => {
     expect(updatedTicket!.status).toEqual(TicketStatus.AVAILABLE);
   });
 });
+
+describe("update ticket - additional uncovered validation cases", () => {
+  it("returns 400 and preserves the existing date when eventDate is in the past", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const ticket = await buildTicket({ userId });
+    const originalEventDate = ticket.eventDate.toISOString();
+
+    await request(app)
+      .patch(`/api/tickets/${ticket.id}`)
+      .set("Cookie", await global.signin(userId))
+      .send({ eventDate: new Date(Date.now() - 86_400_000).toISOString() })
+      .expect(400);
+
+    const persistedTicket = await Ticket.findById(ticket.id);
+    expect(persistedTicket?.eventDate.toISOString()).toEqual(originalEventDate);
+  });
+
+  it.each(["title", "artist", "venue", "city", "seat", "description"])(
+    "returns 400 when %s is not a string",
+    async (field) => {
+      const userId = new mongoose.Types.ObjectId().toHexString();
+      const ticket = await buildTicket({ userId });
+
+      await request(app)
+        .patch(`/api/tickets/${ticket.id}`)
+        .set("Cookie", await global.signin(userId))
+        .send({ [field]: 123 })
+        .expect(400);
+    },
+  );
+});

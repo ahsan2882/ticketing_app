@@ -230,7 +230,9 @@ describe("cancel order - successful cancellation", () => {
 
     // CANCELLED status - should reject
     let ticket = await createTicket();
-    let cancelledOrder = await createOrder(userId, ticket, { status: OrderStatus.CANCELLED });
+    let cancelledOrder = await createOrder(userId, ticket, {
+      status: OrderStatus.CANCELLED,
+    });
 
     await request(app)
       .delete(`/api/orders/${cancelledOrder.id}`)
@@ -238,9 +240,11 @@ describe("cancel order - successful cancellation", () => {
       .send()
       .expect(400);
 
-    // COMPLETED status - should reject  
+    // COMPLETED status - should reject
     ticket = await createTicket();
-    let completedOrder = await createOrder(userId, ticket, { status: OrderStatus.COMPLETED });
+    let completedOrder = await createOrder(userId, ticket, {
+      status: OrderStatus.COMPLETED,
+    });
 
     await request(app)
       .delete(`/api/orders/${completedOrder.id}`)
@@ -394,5 +398,55 @@ describe("cancel order - successful cancellation", () => {
 
     expect(refreshedA!.status).toEqual(OrderStatus.CANCELLED);
     expect(refreshedB!.status).toEqual(OrderStatus.CREATED);
+  });
+});
+
+describe("cancel order - persistence and publication failures", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns 500 and does not publish when a non-concurrency save error occurs", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const cookie = await global.signin(userId);
+    const ticket = await createTicket();
+    const order = await createOrder(userId, ticket);
+    const saveSpy = jest
+      .spyOn(Order.prototype, "save")
+      .mockRejectedValueOnce(new Error("database unavailable"));
+
+    try {
+      await request(app)
+        .delete(`/api/orders/${order.id}`)
+        .set("Cookie", cookie)
+        .send()
+        .expect(500);
+
+      expect(OrderCancelledPublisher.prototype.publish).not.toHaveBeenCalled();
+      const persisted = await Order.findById(order.id);
+      expect(persisted?.status).toEqual(OrderStatus.CREATED);
+    } finally {
+      saveSpy.mockRestore();
+    }
+  });
+
+  it("keeps the cancelled database state and does not return success when publication fails", async () => {
+    const userId = new mongoose.Types.ObjectId().toHexString();
+    const cookie = await global.signin(userId);
+    const ticket = await createTicket();
+    const order = await createOrder(userId, ticket);
+    (
+      OrderCancelledPublisher.prototype.publish as jest.Mock
+    ).mockRejectedValueOnce(new Error("order-cancelled publish failed"));
+
+    await request(app)
+      .delete(`/api/orders/${order.id}`)
+      .set("Cookie", cookie)
+      .send()
+      .expect(500);
+
+    const persisted = await Order.findById(order.id);
+    expect(persisted?.status).toEqual(OrderStatus.CANCELLED);
+    expect(OrderCancelledPublisher.prototype.publish).toHaveBeenCalledTimes(1);
   });
 });

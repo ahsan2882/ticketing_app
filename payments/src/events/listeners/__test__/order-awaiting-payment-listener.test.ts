@@ -141,3 +141,22 @@ describe("OrderAwaitingPaymentListener", () => {
     expect(updated!.version).toEqual(4);
   });
 });
+
+describe("OrderAwaitingPaymentListener - database failures", () => {
+  it("does not ack when the conditional update fails", async () => {
+    const { listener, data, msg } = await setup(1);
+    jest
+      .spyOn(Order, "findOneAndUpdate")
+      .mockRejectedValueOnce(new Error("database unavailable"));
+
+    try {
+      await expect(listener.onMessage(data, msg)).rejects.toThrow(
+        "database unavailable",
+      );
+
+      expect(msg.ack).not.toHaveBeenCalled();
+    } finally {
+      jest.restoreAllMocks();
+    }
+  });
+});

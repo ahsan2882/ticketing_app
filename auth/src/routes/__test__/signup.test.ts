@@ -1,7 +1,12 @@
 import request from "supertest";
 import { app } from "../../app";
+import { User } from "../../models/user.model";
 
 describe("signup flow tests", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it("returns 201 on successful signup", async () => {
     await request(app)
       .post("/api/users/signup")
@@ -530,5 +535,122 @@ describe("signup flow tests", () => {
   it("returns 405 for DELETE /api/users/signup (only POST is registered)", async () => {
     const response = await request(app).delete("/api/users/signup");
     expect(response.status).toEqual(405);
+  });
+
+  it("returns normalized email and trimmed name after signup", async () => {
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "Normalized@Test.COM",
+        password: "validpass",
+        name: "  Normalized User  ",
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      email: "normalized@test.com",
+      name: "Normalized User",
+    });
+  });
+
+  it("maps a duplicate-key race during save to the existing-user response", async () => {
+    const duplicateError = Object.assign(new Error("duplicate key"), {
+      code: 11000,
+    });
+    const saveSpy = jest
+      .spyOn(User.prototype, "save")
+      .mockRejectedValueOnce(duplicateError);
+
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "race@test.com",
+        password: "validpass",
+        name: "Race User",
+      })
+      .expect(400);
+
+    expect(response.body).toEqual({
+      errors: [
+        {
+          message: "User with this email already exists",
+          field: "credentials",
+        },
+      ],
+    });
+    saveSpy.mockRestore();
+  });
+
+  it("returns a service error when saving the user fails unexpectedly", async () => {
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const saveSpy = jest
+      .spyOn(User.prototype, "save")
+      .mockRejectedValueOnce(new Error("database unavailable"));
+
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "failure@test.com",
+        password: "validpass",
+        name: "Failure User",
+      })
+      .expect(500);
+
+    expect(response.body).toHaveProperty("errors");
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    saveSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
+
+  it("sets Allow: POST and a structured error for unsupported signup methods", async () => {
+    const response = await request(app).put("/api/users/signup").expect(405);
+
+    expect(response.headers.allow).toBe("POST");
+    expect(response.body).toEqual({
+      errors: [{ message: "Method not allowed" }],
+    });
+  });
+
+  it("returns a generic server error when the duplicate lookup fails", async () => {
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const findOneSpy = jest
+      .spyOn(User, "findOne")
+      .mockRejectedValueOnce(new Error("database unavailable"));
+
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "lookup-failure@test.com",
+        password: "validpass",
+        name: "Lookup Failure",
+      })
+      .expect(500);
+
+    expect(response.body).toHaveProperty("errors");
+    expect(findOneSpy).toHaveBeenCalledWith({
+      email: "lookup-failure@test.com",
+    });
+    expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it("returns 400 when signup password is not a string", async () => {
+    const response = await request(app)
+      .post("/api/users/signup")
+      .send({
+        email: "numeric-password@test.com",
+        password: 1234,
+        name: "Numeric Password",
+      })
+      .expect(400);
+
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ message: "Password must be provided" }),
+      ]),
+    );
   });
 });

@@ -1,3 +1,4 @@
+import { SUBJECTS } from "@venuepass/common";
 import { TicketStatus } from "@venuepass/common/client";
 import mongoose from "mongoose";
 import type { JsMsg } from "nats";
@@ -97,5 +98,34 @@ describe("ticket created listener", () => {
 
     expect(await Ticket.countDocuments({ _id: data.id })).toBe(1);
     expect(secondMsg.ack).toHaveBeenCalled();
+  });
+
+  it("has the expected subject and default durable name", async () => {
+    const { listener } = await setUp();
+
+    expect(listener.subject).toEqual(SUBJECTS.TicketCreated);
+    expect(listener.durableName).toEqual("orders-service-ticket-created");
+  });
+
+  it("accepts a custom durable name", () => {
+    const listener = new TicketCreatedListener(
+      natsClient.client,
+      "custom-ticket-created",
+    );
+
+    expect(listener.durableName).toEqual("custom-ticket-created");
+  });
+
+  it("does not ack when persisting the ticket fails", async () => {
+    const { listener, data, msg } = await setUp();
+    jest
+      .spyOn(Ticket.prototype, "save")
+      .mockRejectedValueOnce(new Error("ticket save failed"));
+
+    await expect(listener.onMessage(data, msg)).rejects.toThrow(
+      "ticket save failed",
+    );
+
+    expect(msg.ack).not.toHaveBeenCalled();
   });
 });

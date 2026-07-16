@@ -1,4 +1,4 @@
-import { type OrderCancelledEvent } from "@venuepass/common";
+import { SUBJECTS, type OrderCancelledEvent } from "@venuepass/common";
 import {
   EventType,
   OrderStatus,
@@ -274,5 +274,61 @@ describe("order cancelled listener", () => {
     expect(finalTicket?.orderId).toBeUndefined();
     expect(msgA.ack).toHaveBeenCalled();
     expect(msgB.ack).toHaveBeenCalled();
+  });
+});
+
+describe("order cancelled listener - metadata and publish failure", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("uses the OrderCancelled subject and default durable name", () => {
+    const listener = new OrderCancelledListener(natsClient.client);
+
+    expect(listener.subject).toEqual(SUBJECTS.OrderCancelled);
+    expect(listener.durableName).toEqual("tickets-service-order-cancelled");
+  });
+
+  it("uses a caller-provided durable name", () => {
+    const listener = new OrderCancelledListener(
+      natsClient.client,
+      "custom-order-cancelled-consumer",
+    );
+
+    expect(listener.durableName).toEqual("custom-order-cancelled-consumer");
+  });
+
+  it("publishes the complete TicketUpdated payload including title and version", async () => {
+    const { listener, data, msg, ticket } = await setUp();
+
+    await listener.onMessage(data, msg);
+
+    const persistedTicket = await Ticket.findById(data.ticket.id);
+    const publisherInstance = (TicketUpdatedPublisher as jest.Mock).mock
+      .instances[0];
+    expect(publisherInstance.publish).toHaveBeenCalledWith({
+      id: ticket.id,
+      title: ticket.title,
+      price: ticket.price,
+      userId: ticket.userId,
+      status: TicketStatus.AVAILABLE,
+      version: persistedTicket?.version,
+    });
+  });
+
+  it("does not ack when publishing TicketUpdated fails", async () => {
+    const { listener, data, msg } = await setUp();
+    (
+      TicketUpdatedPublisher.prototype.publish as jest.Mock
+    ).mockRejectedValueOnce(new Error("publish failed"));
+
+    await expect(listener.onMessage(data, msg)).rejects.toThrow(
+      "publish failed",
+    );
+
+    const persistedTicket = await Ticket.findById(data.ticket.id);
+    expect(persistedTicket?.status).toEqual(TicketStatus.AVAILABLE);
+    expect(persistedTicket?.orderId).toBeUndefined();
+    expect(msg.ack).not.toHaveBeenCalled();
   });
 });
