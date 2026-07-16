@@ -21,7 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/bull": "^4.10.4",
-    "@venuepass/common": "^1.0.68",
+    "@venuepass/common": "file:common.tgz",
     "bull": "^4.16.5",
     "nats": "^2.29.3",
     "tsx": "^4.22.4",

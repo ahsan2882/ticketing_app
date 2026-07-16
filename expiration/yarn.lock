@@ -1081,10 +1081,9 @@
   resolved "https://npm.home.arpa/@unrs/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-1.12.2.tgz#72da0da48d72b1e87831b9c0308931d3f4669027"
   integrity sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==
 
-"@venuepass/common@^1.0.68":
-  version "1.0.68"
-  resolved "https://npm.home.arpa/@venuepass/common/-/common-1.0.68.tgz#8c497228533cb4b1f0b064f26359631ebb2b7bc1"
-  integrity sha512-8Ke2HNAw+oBIhifidBqkq2VB+muUEFJuqqMCz1o371QV11rE8PQiijKYGA76+0QMAGZvblpSFlAoPKKbI3+7ug==
+"@venuepass/common@file:common.tgz":
+  version "1.0.72"
+  resolved "file:common.tgz#b9431db976dd2070d6fb874ce27e54fe8b9dba16"
   dependencies:
     "@types/cookie-session" "^2.0.49"
     "@types/express" "^5.0.6"
