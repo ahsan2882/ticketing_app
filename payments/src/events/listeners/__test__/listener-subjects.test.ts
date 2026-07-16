@@ -25,13 +25,13 @@ describe("existing order listener subjects", () => {
     expect(listener.subject).toEqual(SUBJECTS.OrderAwaitingPayment);
   });
 
-  it("uses OrderCompleted for the awaiting-payment listener", () => {
+  it("uses OrderCompleted for the order-completed listener", () => {
     const listener = new OrderCompletedListener(natsClient.client);
 
     expect(listener.subject).toEqual(SUBJECTS.OrderCompleted);
   });
 
-  it("uses PaymentRefund for the awaiting-payment listener", () => {
+  it("uses PaymentRefund for the payment-refund listener", () => {
     const listener = new PaymentRefundListener(natsClient.client);
 
     expect(listener.subject).toEqual(SUBJECTS.PaymentRefund);
