@@ -1,6 +1,6 @@
 {
   "name": "@venuepass/common",
-  "version": "1.0.68",
+  "version": "1.0.72",
   "description": "Shared common package for VenuePass application",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
@@ -25,9 +25,10 @@
     "sync-readme-version": "node scripts/sync-readme-version.js",
     "version": "yarn sync-readme-version && git add README.md",
     "prepublishOnly": "yarn build",
-    "release:patch": "yarn version --patch && yarn publish",
-    "release:minor": "yarn version --minor && yarn publish",
-    "release:major": "yarn version --major && yarn publish"
+    "release:patch": "yarn version --patch && yarn copy:tar && yarn publish",
+    "release:minor": "yarn version --minor && yarn copy:tar && yarn publish",
+    "release:major": "yarn version --major && yarn copy:tar && yarn publish",
+    "copy:tar": "npm pack && for d in ../auth ../tickets ../orders ../payments ../expiration ../client; do cp -f *.tgz \"$d/common.tgz\"; done && rm -f *.tgz"
   },
   "keywords": [],
   "author": "ahsan2882",

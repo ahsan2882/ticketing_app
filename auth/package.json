@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "tsx watch src/index.ts",
-    "test": "jest --watchAll --no-cache"
+    "test": "jest --watchAll --no-cache",
+    "test:ci": "jest"
   },
   "jest": {
     "preset": "ts-jest",
@@ -26,7 +27,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.1",
-    "@venuepass/common": "^1.0.68",
+    "@venuepass/common": "file:common.tgz",
     "cookie-session": "^2.1.1",
     "express": "^5.2.1",
     "express-validator": "^7.3.2",
@@ -44,6 +45,5 @@
     "mongodb-memory-server": "^11.2.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11"
-  },
-  "packageManager": "yarn@1.22.22"
+  }
 }
