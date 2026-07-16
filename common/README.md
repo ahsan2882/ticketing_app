@@ -820,7 +820,7 @@ MIT
 
 ---
 
-**Version**: <!-- PACKAGE_VERSION -->1.0.71<!-- /PACKAGE_VERSION -->
+**Version**: <!-- PACKAGE_VERSION -->1.0.72<!-- /PACKAGE_VERSION -->
 
 **Author**: ahsan2882
 
